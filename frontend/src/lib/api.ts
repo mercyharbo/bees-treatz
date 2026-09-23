@@ -9,7 +9,7 @@ export function getBaseApiUrl(): string {
   if (typeof window !== 'undefined') {
     return '/api';
   }
-  return (process.env.API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+  return (process.env.API_URL || 'https://bees-treatz.onrender.com/api').replace(/\/$/, '');
 }
 
 /**

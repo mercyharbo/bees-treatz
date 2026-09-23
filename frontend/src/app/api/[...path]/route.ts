@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const BACKEND_BASE_URL = process.env.API_URL || 'http://localhost:5000/api';
+const BACKEND_BASE_URL = process.env.API_URL || 'https://bees-treatz.onrender.com/api';
 
 async function handleProxy(
   request: NextRequest,
