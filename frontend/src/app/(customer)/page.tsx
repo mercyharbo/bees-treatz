@@ -72,14 +72,14 @@ export default function HomePage() {
 
       {/* Featured Menu Teaser Section */}
       <section id="menu" className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20">
-        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 border-b pb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 border-b border-gray-200/80 dark:border-white/10 pb-6">
           <div>
-            <span className="text-xs font-bold text-orange-600 dark:text-orange-500">
+            <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
               Fresh From Our Kitchen
             </span>
-            <h2 className="text-3xl font-extrabold mt-1">Our Signature Specialties</h2>
+            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-1">Our Signature Specialties</h2>
           </div>
-          <Button asChild variant="outline" className="rounded-full text-xs font-semibold px-4 h-8">
+          <Button asChild variant="outline" className="rounded-full text-xs font-semibold px-4 h-8 border-gray-200 dark:border-white/10 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10">
             <Link href="/login">
               <span>Sign In To Order</span>
             </Link>
@@ -113,9 +113,9 @@ export default function HomePage() {
           ].map((dish, idx) => (
             <div
               key={idx}
-              className="group overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-card hover:shadow-xl transition-all duration-300"
+              className="group overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-gray-900/60 dark:backdrop-blur-xl transition-all duration-300"
             >
-              <div className="relative aspect-video w-full overflow-hidden bg-muted">
+              <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                 <Image
                   src={dish.image}
                   alt={dish.title}
@@ -130,14 +130,14 @@ export default function HomePage() {
               </div>
               <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg">{dish.title}</h3>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{dish.title}</h3>
                   <span className="font-extrabold text-orange-600 dark:text-orange-400">{dish.price}</span>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                   {dish.description}
                 </p>
                 <div className="pt-2">
-                  <Button asChild variant="secondary" className="w-full rounded-xl text-xs font-semibold h-9">
+                  <Button asChild variant="secondary" className="w-full rounded-xl text-xs font-semibold h-9 bg-gray-100 hover:bg-orange-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-orange-500 transition-colors cursor-pointer">
                     <Link href="/register">
                       <span>Order This Dish</span>
                     </Link>

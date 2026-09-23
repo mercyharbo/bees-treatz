@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SWRProvider } from '@/components/providers/swr-provider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Inter, Lato } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
@@ -28,9 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn('font-sans', inter.variable, lato.variable)}>
-      <body className="min-h-screen bg-background antialiased font-sans">
-        <SWRProvider>{children}</SWRProvider>
+    <html lang="en" suppressHydrationWarning className={cn('font-sans', inter.variable, lato.variable)}>
+      <body className="min-h-screen bg-background text-foreground antialiased font-sans">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange={false}>
+          <SWRProvider>{children}</SWRProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

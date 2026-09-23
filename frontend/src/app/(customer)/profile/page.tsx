@@ -142,7 +142,7 @@ function ProfileContent() {
   const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-in fade-in duration-300">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16 space-y-8 animate-in fade-in duration-300">
       {/* Page Title & Breadcrumb */}
       <div className="space-y-1">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -156,7 +156,7 @@ function ProfileContent() {
       {/* Main Grid: 1-Column Left Summary + 2-Column Right Tabbed Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
         {/* Left Column: Profile Summary Card (col-span-1) */}
-        <Card className="lg:col-span-1 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden p-6 sm:p-7 space-y-6 text-center">
+        <Card className="lg:col-span-1 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-gray-900/60 dark:backdrop-blur-xl shadow-none overflow-hidden p-6 sm:p-7 space-y-6 text-center">
           {/* Circular Avatar */}
           <div className="relative inline-block mx-auto">
             <Avatar className="size-24 sm:size-28 ring-4 ring-orange-500/20 shadow-md">
@@ -225,7 +225,7 @@ function ProfileContent() {
           )}
 
           {/* Summary Stats Rows */}
-          <div className="divide-y divide-gray-100 dark:divide-gray-800 border-y border-gray-100 dark:border-gray-800 py-1 text-xs text-left">
+          <div className="divide-y divide-gray-100 dark:divide-white/10 border-y border-gray-100 dark:border-white/10 py-1 text-xs text-left">
             <div className="py-2.5 flex items-center justify-between">
               <span className="text-gray-500 dark:text-gray-400">Total Orders</span>
               <span className="font-bold text-gray-900 dark:text-white">0</span>
@@ -252,7 +252,7 @@ function ProfileContent() {
               type="button"
               onClick={handleSignOut}
               variant="outline"
-              className="w-full rounded-xl border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-semibold h-10 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full rounded-xl border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-semibold h-10 cursor-pointer flex items-center justify-center gap-2"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign Out
@@ -261,34 +261,34 @@ function ProfileContent() {
         </Card>
 
         {/* Right Column: Tabbed Content Section (col-span-2) */}
-        <Card className="lg:col-span-2 rounded-3xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden p-6 sm:p-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            {/* Horizontal Tabs Header inspired by reference design */}
+        <Card className="lg:col-span-2 rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-gray-900/60 dark:backdrop-blur-xl shadow-none overflow-hidden p-6 sm:p-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col gap-6">
+            {/* Horizontal Tabs Header across full top width */}
             <TabsList
               variant="line"
-              className="border-b border-gray-100 dark:border-gray-800 w-full justify-start gap-4 sm:gap-8 pb-px overflow-x-auto"
+              className="border-b border-gray-200 dark:border-white/10 w-full justify-start gap-4 sm:gap-8 pb-px overflow-x-auto"
             >
               <TabsTrigger
                 value="settings"
-                className="text-xs sm:text-sm font-semibold pb-3 data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 text-gray-500 dark:text-gray-400"
+                className="text-xs sm:text-sm font-semibold pb-3 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 transition-colors shrink-0"
               >
                 Account Settings
               </TabsTrigger>
               <TabsTrigger
                 value="orders"
-                className="text-xs sm:text-sm font-semibold pb-3 data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 text-gray-500 dark:text-gray-400"
+                className="text-xs sm:text-sm font-semibold pb-3 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 transition-colors shrink-0"
               >
                 My Orders
               </TabsTrigger>
               <TabsTrigger
                 value="addresses"
-                className="text-xs sm:text-sm font-semibold pb-3 data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 text-gray-500 dark:text-gray-400"
+                className="text-xs sm:text-sm font-semibold pb-3 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 transition-colors shrink-0"
               >
                 Saved Addresses
               </TabsTrigger>
               <TabsTrigger
                 value="security"
-                className="text-xs sm:text-sm font-semibold pb-3 data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 text-gray-500 dark:text-gray-400"
+                className="text-xs sm:text-sm font-semibold pb-3 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white data-active:border-b-2 data-active:border-orange-500 data-active:text-orange-600 dark:data-active:text-orange-400 transition-colors shrink-0"
               >
                 Security
               </TabsTrigger>
@@ -316,7 +316,7 @@ function ProfileContent() {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="First Name"
-                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                       required
                     />
                   </div>
@@ -332,7 +332,7 @@ function ProfileContent() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Last Name"
-                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                       required
                     />
                   </div>
@@ -350,7 +350,7 @@ function ProfileContent() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+44 7123 456789"
-                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     />
                   </div>
 
@@ -364,7 +364,7 @@ function ProfileContent() {
                       type="email"
                       value={email}
                       disabled
-                      className="h-11 rounded-xl text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 text-gray-500 cursor-not-allowed"
+                      className="h-11 rounded-xl text-sm bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -381,7 +381,7 @@ function ProfileContent() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="London"
-                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     />
                   </div>
 
@@ -396,7 +396,7 @@ function ProfileContent() {
                       value={postcode}
                       onChange={(e) => setPostcode(e.target.value.toUpperCase())}
                       placeholder="SE15 5BA"
-                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                      className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     />
                   </div>
                 </div>
@@ -415,7 +415,7 @@ function ProfileContent() {
 
             {/* TAB 2: My Orders */}
             <TabsContent value="orders" className="space-y-6 outline-none">
-              <div className="p-8 sm:p-12 text-center rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 space-y-4">
+              <div className="p-8 sm:p-12 text-center rounded-2xl border border-dashed border-gray-200 dark:border-white/15 bg-gray-50/50 dark:bg-gray-800/20 space-y-4">
                 <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center mx-auto">
                   <ShoppingBag className="w-6 h-6" />
                 </div>
@@ -439,7 +439,7 @@ function ProfileContent() {
             {/* TAB 3: Saved Addresses */}
             <TabsContent value="addresses" className="space-y-6 outline-none">
               <div className="space-y-4">
-                <div className="p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/40 space-y-3">
+                <div className="p-5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-gray-50/80 dark:bg-gray-800/30 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 font-bold text-xs text-gray-900 dark:text-white">
                       <MapPin className="w-3.5 h-3.5 text-orange-500" />
@@ -467,7 +467,7 @@ function ProfileContent() {
                     value={addressLine}
                     onChange={(e) => setAddressLine(e.target.value)}
                     placeholder="e.g. Flat 4, 12 High Street"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                   />
                 </div>
               </div>
@@ -500,7 +500,7 @@ function ProfileContent() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter current password"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     required
                   />
                 </div>
@@ -515,7 +515,7 @@ function ProfileContent() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min 8 chars)"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     required
                   />
                   <PasswordStrengthBar password={newPassword} />
@@ -531,7 +531,7 @@ function ProfileContent() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Re-type new password"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
                     required
                   />
                 </div>
