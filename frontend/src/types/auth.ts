@@ -11,6 +11,7 @@ export interface UserProfile {
   email: string;
   name: string;
   phone?: string;
+  isEmailVerified?: boolean;
 }
 
 export interface LoginFormData {

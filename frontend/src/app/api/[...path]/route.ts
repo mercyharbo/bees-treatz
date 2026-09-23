@@ -63,6 +63,7 @@ async function handleProxy(
           'connection',
           'keep-alive',
           'content-encoding',
+          'content-length',
         ].includes(lowerKey)
       ) {
         responseHeaders.set(key, value);
@@ -71,11 +72,15 @@ async function handleProxy(
 
     const responseContentType = backendResponse.headers.get('content-type') || '';
     if (responseContentType.includes('application/json')) {
-      const data = await backendResponse.json();
-      return NextResponse.json(data, {
-        status: backendResponse.status,
-        headers: responseHeaders,
-      });
+      try {
+        const data = await backendResponse.json();
+        return NextResponse.json(data, {
+          status: backendResponse.status,
+          headers: responseHeaders,
+        });
+      } catch {
+        // Fall back to text if json parsing fails
+      }
     }
 
     const textData = await backendResponse.text();

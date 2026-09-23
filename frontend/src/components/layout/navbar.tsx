@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, Menu as MenuIcon, X } from 'lucide-react';
+import { ShoppingBag, Menu as MenuIcon, X, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHydratedCartStore } from '@/store/useCartStore';
+import { useHydratedAuthStore, useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
@@ -14,6 +15,13 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const itemCount = useHydratedCartStore((state) => state.getItemCount(), 0);
+  const user = useHydratedAuthStore((state) => state.user, null);
+  const isAuthenticated = useHydratedAuthStore((state) => state.isAuthenticated, false);
+  const { initialize, logout } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +37,9 @@ export function Navbar() {
     { label: 'About', href: '/#about' },
     { label: 'Contact', href: '/#contact' },
   ];
+
+  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Profile';
 
   return (
     <header className="sticky top-4 z-50 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto transition-all duration-300">
@@ -87,17 +98,32 @@ export function Navbar() {
             )}
           </Link>
 
-          {/* Rounded Pill CTA Button (Attachment 3: "Get Started" style) */}
+          {/* Rounded Pill CTA / Profile Button */}
           <div className="hidden sm:inline-block">
-            <Button
-              asChild
-              variant="default"
-              className="rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs sm:text-sm px-5 h-9 shadow-md border-none"
-            >
-              <Link href="/login">
-                <span>Sign In</span>
-              </Link>
-            </Button>
+            {isAuthenticated && user ? (
+              <Button
+                asChild
+                variant="default"
+                className="rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs sm:text-sm px-3.5 h-9 shadow-md border-none flex items-center gap-2 cursor-pointer"
+              >
+                <Link href="/profile">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                    {userInitial}
+                  </div>
+                  <span>{firstName}</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                variant="default"
+                className="rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-xs sm:text-sm px-5 h-9 shadow-md border-none cursor-pointer"
+              >
+                <Link href="/login">
+                  <span>Sign In</span>
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -125,15 +151,40 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          <div className="pt-2 border-t border-white/10">
-            <Button
-              asChild
-              className="w-full rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-sm h-10"
-            >
-              <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <span>Sign In</span>
-              </Link>
-            </Button>
+          <div className="pt-2 border-t border-white/10 space-y-2">
+            {isAuthenticated && user ? (
+              <>
+                <Button
+                  asChild
+                  className="w-full rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-sm h-10 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
+                    <UserIcon className="w-4 h-4 text-orange-500" />
+                    <span>My Profile ({firstName})</span>
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  variant="outline"
+                  className="w-full rounded-full bg-transparent hover:bg-white/10 text-gray-300 hover:text-white border-white/20 text-xs font-medium h-9 cursor-pointer"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button
+                asChild
+                className="w-full rounded-full bg-white text-gray-950 hover:bg-gray-100 font-semibold text-sm h-10 cursor-pointer"
+              >
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <span>Sign In</span>
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       )}

@@ -36,14 +36,25 @@ function VerifyEmailContent() {
           body: JSON.stringify({ token }),
         });
 
-        const data = await res.json();
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {
+          // Non-JSON response
+        }
 
         if (isMounted) {
           if (res.ok) {
             setVerified(true);
             setError(null);
           } else {
-            setError(data.error || 'Invalid or expired verification link.');
+            const errorMsg =
+              data?.error ||
+              data?.message ||
+              (res.status === 400
+                ? 'Invalid or expired verification link.'
+                : 'Unable to verify email.');
+            setError(errorMsg);
           }
           setVerifying(false);
         }
@@ -78,10 +89,21 @@ function VerifyEmailContent() {
         body: JSON.stringify({ email: email.trim() }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Non-JSON response
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to resend verification email.');
+        const errorMsg =
+          data?.error ||
+          data?.message ||
+          (res.status === 429
+            ? 'Too many resend requests. Please wait a few minutes and try again.'
+            : 'Failed to resend verification email.');
+        setError(errorMsg);
       } else {
         setResent(true);
       }

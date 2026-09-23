@@ -40,10 +40,31 @@ export default function LoginPage() {
         body: JSON.stringify({ email: email.trim(), password, rememberMe }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Non-JSON response
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Invalid email or password.');
+        const errorMsg =
+          data?.error ||
+          data?.message ||
+          (res.status === 401
+            ? 'Invalid email or password.'
+            : res.status === 423
+            ? 'Account temporarily locked. Please try again later.'
+            : res.status === 429
+            ? 'Too many login attempts. Please wait a few minutes and try again.'
+            : 'Login failed. Please check your credentials.');
+        setError(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      if (!data?.token) {
+        setError('Login failed: invalid response from server.');
         setLoading(false);
         return;
       }

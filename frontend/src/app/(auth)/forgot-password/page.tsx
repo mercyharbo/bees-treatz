@@ -31,10 +31,21 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email: email.trim() }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Non-JSON response
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to send reset link.');
+        const errorMsg =
+          data?.error ||
+          data?.message ||
+          (res.status === 429
+            ? 'Too many reset requests. Please wait a few minutes and try again.'
+            : 'Failed to send reset link. Please try again.');
+        setError(errorMsg);
         setLoading(false);
         return;
       }

@@ -46,10 +46,23 @@ function ResetPasswordForm() {
         body: JSON.stringify({ token, password, confirmPassword }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Non-JSON response
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to reset password.');
+        const errorMsg =
+          data?.error ||
+          data?.message ||
+          (res.status === 400
+            ? 'Invalid or expired password reset link. Please request a new one.'
+            : res.status === 429
+            ? 'Too many reset attempts. Please wait a few minutes and try again.'
+            : 'Failed to reset password. Please try again.');
+        setError(errorMsg);
         setLoading(false);
         return;
       }

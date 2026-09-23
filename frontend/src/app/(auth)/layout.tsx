@@ -1,11 +1,28 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FoodMosaic } from '@/components/auth/food-mosaic';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const { isAuthenticated, isLoading, initialize } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/profile');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-white dark:bg-gray-950">
       {/* Form Section */}

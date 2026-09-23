@@ -46,10 +46,25 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        // Non-JSON response
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create account.');
+        const errorMsg =
+          data?.error ||
+          data?.message ||
+          (res.status === 409
+            ? 'An account with this email already exists.'
+            : res.status === 400
+            ? 'Please check your registration details and try again.'
+            : res.status === 429
+            ? 'Too many registration attempts. Please wait a few minutes and try again.'
+            : 'Failed to create account.');
+        setError(errorMsg);
         setLoading(false);
         return;
       }
