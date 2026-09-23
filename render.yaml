@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: bees-treatz-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: http://localhost:3000
+      - key: RESTAURANT_POSTCODE
+        value: SE15 5BA
+      - key: MAX_DELIVERY_DISTANCE_MILES
+        value: "6.0"
+      - key: BASE_DELIVERY_FEE
+        value: "3.50"
+      - key: PER_MILE_FEE
+        value: "0.80"
+      - key: FREE_DELIVERY_THRESHOLD
+        value: "50.00"

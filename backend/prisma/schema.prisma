@@ -1,0 +1,126 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  name                 String
+  email                String    @unique
+  passwordHash         String
+  phone                String?
+  isEmailVerified      Boolean   @default(false)
+  emailVerifyToken     String?   // SHA-256 hash of verification token
+  emailVerifyExpires   DateTime?
+  passwordResetToken   String?   // SHA-256 hash of reset token
+  passwordResetExpires DateTime?
+  failedLoginAttempts  Int       @default(0)
+  lockoutUntil         DateTime?
+  lastLoginAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("ADMIN") // ADMIN | KITCHEN
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Category {
+  id           String     @id @default(uuid())
+  name         String
+  slug         String     @unique
+  description  String?
+  displayOrder Int        @default(0)
+  items        MenuItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model MenuItem {
+  id           String        @id @default(uuid())
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String        @unique
+  description  String
+  basePrice    Float
+  imageUrl     String?
+  isAvailable  Boolean       @default(true)
+  isSpicy      Boolean       @default(false)
+  isVegetarian Boolean       @default(false)
+  allergens    String        @default("[]")
+  optionGroups OptionGroup[]
+  orderItems   OrderItem[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model OptionGroup {
+  id         String   @id @default(uuid())
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  name       String   // e.g. "Choose Your Swallow", "Choose Your Protein", "Spice Level"
+  required   Boolean  @default(true)
+  minSelect  Int      @default(1)
+  maxSelect  Int      @default(1)
+  options    Option[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Option {
+  id              String      @id @default(uuid())
+  optionGroupId   String
+  optionGroup     OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  name            String      // e.g. "Pounded Yam", "Assorted Meats", "Extra Hot"
+  additionalPrice Float       @default(0.0)
+  isAvailable     Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model Order {
+  id                    String      @id @default(uuid())
+  orderNumber           String      @unique // e.g. "BT-1002"
+  customerName          String
+  customerEmail         String
+  customerPhone         String
+  orderType             String      @default("DELIVERY") // DELIVERY | COLLECTION
+  deliveryAddress       String?
+  deliveryPostcode      String?
+  deliveryFee           Float       @default(0.0)
+  subtotal              Float
+  total                 Float
+  specialInstructions   String?
+  status                String      @default("PENDING") // PENDING | CONFIRMED | PREPARING | READY_FOR_COLLECTION | OUT_FOR_DELIVERY | DELIVERED | CANCELLED
+  paymentStatus         String      @default("UNPAID") // UNPAID | PAID | REFUNDED
+  stripeSessionId       String?     @unique
+  stripePaymentIntentId String?     @unique
+  items                 OrderItem[]
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+}
+
+model OrderItem {
+  id              String    @id @default(uuid())
+  orderId         String
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId      String?
+  menuItem        MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  itemName        String
+  unitPrice       Float
+  quantity        Int       @default(1)
+  totalPrice      Float
+  selectedOptions String    @default("[]")
+  createdAt       DateTime  @default(now())
+}
