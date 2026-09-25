@@ -96,6 +96,69 @@ const UpdateProfileSchema = z.object({
 });
 
 /**
+ * Helper to parse cookies from incoming Express request headers
+ */
+function parseCookies(req: Request): Record<string, string> {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return {};
+  return cookieHeader.split(';').reduce((acc, item) => {
+    const [key, ...v] = item.trim().split('=');
+    if (key) acc[key] = decodeURIComponent(v.join('='));
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+/**
+ * Issues a 15-minute access token and a 30-day cryptographically hashed refresh token
+ */
+async function issueCustomerTokens(userId: string, email: string) {
+  const accessToken = jwt.sign(
+    { userId, email, role: 'customer' },
+    config.jwt.secret,
+    { expiresIn: '15m' }
+  );
+
+  const rawRefreshToken = generateRandomToken();
+  const tokenHash = hashToken(rawRefreshToken);
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  await prisma.refreshToken.create({
+    data: {
+      userId,
+      tokenHash,
+      expiresAt,
+    },
+  });
+
+  return { accessToken, refreshToken: rawRefreshToken };
+}
+
+/**
+ * Sets dual-token authentication cookies on the HTTP response
+ */
+function setCustomerAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+  const isProd = process.env.NODE_ENV === 'production';
+  const accessMaxAge = 15 * 60; // 15 mins in seconds
+  const refreshMaxAge = 30 * 24 * 60 * 60; // 30 days in seconds
+  const secureFlag = isProd ? '; Secure' : '';
+
+  res.setHeader('Set-Cookie', [
+    `bt_auth_token=${encodeURIComponent(accessToken)}; Path=/; Max-Age=${accessMaxAge}; SameSite=Lax${secureFlag}`,
+    `bt_refresh_token=${encodeURIComponent(refreshToken)}; Path=/; Max-Age=${refreshMaxAge}; HttpOnly; SameSite=Lax${secureFlag}`,
+  ]);
+}
+
+/**
+ * Clears authentication cookies upon session expiry or logout
+ */
+function clearCustomerAuthCookies(res: Response) {
+  res.setHeader('Set-Cookie', [
+    'bt_auth_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax',
+    'bt_refresh_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
+  ]);
+}
+
+/**
  * POST /api/auth/register
  * Creates a customer account, hashes password, generates zero-knowledge verification token
  */
@@ -238,21 +301,14 @@ export async function loginCustomerHandler(req: Request, res: Response): Promise
       },
     });
 
-    // Issue JWT: 30 days if rememberMe, 24 hours otherwise
-    const tokenExpires = rememberMe ? '30d' : '24h';
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: 'customer',
-      },
-      config.jwt.secret,
-      { expiresIn: tokenExpires as any }
-    );
+    // Issue Dual Tokens: 15-minute access token + 30-day refresh token with rotation
+    const { accessToken, refreshToken } = await issueCustomerTokens(user.id, user.email);
+    setCustomerAuthCookies(res, accessToken, refreshToken);
 
     res.json({
       success: true,
-      token,
+      token: accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -718,4 +774,95 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
     res.status(500).json({ error: 'Internal server error changing password.' });
   }
 }
+
+/**
+ * POST /api/auth/refresh
+ * Validates the refresh token (from cookie or JSON body), rotates it in DB,
+ * and issues a fresh 15-minute access token + new 30-day rotated refresh token.
+ */
+export async function refreshCustomerTokenHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const cookies = parseCookies(req);
+    const rawRefreshToken = cookies.bt_refresh_token || req.body?.refreshToken;
+
+    if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
+      clearCustomerAuthCookies(res);
+      res.status(401).json({ error: 'Refresh token is required.' });
+      return;
+    }
+
+    const tokenHash = hashToken(rawRefreshToken);
+    const existingToken = await prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!existingToken || existingToken.revoked || existingToken.expiresAt < new Date()) {
+      clearCustomerAuthCookies(res);
+      res.status(401).json({ error: 'Session has expired. Please log in again.' });
+      return;
+    }
+
+    // Revoke old token immediately (Rotation to prevent replay attacks)
+    await prisma.refreshToken.update({
+      where: { id: existingToken.id },
+      data: { revoked: true },
+    });
+
+    // Issue new dual tokens
+    const { accessToken, refreshToken: newRefreshToken } = await issueCustomerTokens(
+      existingToken.user.id,
+      existingToken.user.email
+    );
+
+    setCustomerAuthCookies(res, accessToken, newRefreshToken);
+
+    res.json({
+      success: true,
+      token: accessToken,
+      refreshToken: newRefreshToken,
+      user: {
+        id: existingToken.user.id,
+        name: existingToken.user.name,
+        email: existingToken.user.email,
+        isEmailVerified: existingToken.user.isEmailVerified,
+        phone: existingToken.user.phone,
+        avatarUrl: existingToken.user.avatarUrl,
+        address: existingToken.user.address,
+        city: existingToken.user.city,
+        state: existingToken.user.state,
+        postcode: existingToken.user.postcode,
+      },
+    });
+  } catch (error: any) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ error: 'Failed to refresh authentication session.' });
+  }
+}
+
+/**
+ * POST /api/auth/logout
+ * Revokes the refresh token in the database and clears cookies.
+ */
+export async function logoutCustomerHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const cookies = parseCookies(req);
+    const rawRefreshToken = cookies.bt_refresh_token || req.body?.refreshToken;
+
+    if (rawRefreshToken && typeof rawRefreshToken === 'string') {
+      const tokenHash = hashToken(rawRefreshToken);
+      await prisma.refreshToken.updateMany({
+        where: { tokenHash },
+        data: { revoked: true },
+      });
+    }
+
+    clearCustomerAuthCookies(res);
+    res.json({ success: true, message: 'Logged out successfully.' });
+  } catch (error: any) {
+    clearCustomerAuthCookies(res);
+    res.json({ success: true });
+  }
+}
+
 

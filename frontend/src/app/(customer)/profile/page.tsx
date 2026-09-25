@@ -15,8 +15,8 @@ function ProfileContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'settings';
 
-  const { user, isAuthenticated, isLoading, initialize, logout, setUser } = useAuthStore();
-  const { user: profileData, mutate: mutateProfile } = useProfile();
+  const { logout } = useAuthStore();
+  const { user, loading, mutate: refreshProfile } = useProfile();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Avatar Modal State
@@ -29,45 +29,29 @@ function ProfileContent() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
   useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  // Synchronize latest SWR profile data with store
-  useEffect(() => {
-    if (profileData) {
-      setUser(profileData);
-    }
-  }, [profileData, setUser]);
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login?redirect=/profile');
-    }
-  }, [isAuthenticated, isLoading, router]);
-
-  useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Continue client logout even if backend fails
+    }
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
-  // Update Avatar using centralized api client
+  // Update Avatar using centralized api client and SWR revalidation
   const handleUpdateAvatar = async (avatarUrl: string | null) => {
     setUploadingAvatar(true);
 
     try {
-      const data = await api.patch<{ user?: typeof user }>('/auth/profile', { avatarUrl });
-
-      if (data?.user) {
-        setUser(data.user);
-        await mutateProfile();
-      }
+      await api.patch('/auth/profile', { avatarUrl });
+      await refreshProfile();
     } finally {
       setUploadingAvatar(false);
     }
@@ -91,7 +75,8 @@ function ProfileContent() {
     }
   };
 
-  if (isLoading || !isAuthenticated || !user) {
+  // Pure SWR loading check for skeleton
+  if (loading || !user) {
     return <ProfileSkeleton />;
   }
 
@@ -126,6 +111,9 @@ function ProfileContent() {
           user={user}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          onProfileUpdated={async () => {
+            await refreshProfile();
+          }}
         />
       </div>
 

@@ -24,8 +24,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         localStorage.setItem('bt_auth_token', token);
         localStorage.setItem('bt_auth_user', JSON.stringify(user));
-        // Sync cookie for Next.js proxy/middleware server redirects
-        document.cookie = `bt_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+        // Sync access token cookie for Next.js proxy/server requests (15 minutes)
+        document.cookie = `bt_auth_token=${encodeURIComponent(token)}; path=/; max-age=900; SameSite=Lax`;
       } catch (e) {
         console.error('Failed to store auth session:', e);
       }
@@ -49,8 +49,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         localStorage.removeItem('bt_auth_token');
         localStorage.removeItem('bt_auth_user');
-        // Expire cookie
+        // Expire both access token and refresh token cookies
         document.cookie = 'bt_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+        document.cookie = 'bt_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       } catch (e) {
         console.error('Failed to clear auth session:', e);
       }

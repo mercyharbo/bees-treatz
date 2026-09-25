@@ -13,9 +13,10 @@ import { api } from '@/lib/api';
 
 interface AccountSettingsTabProps {
   user: UserProfile;
+  onProfileUpdated?: () => Promise<unknown> | unknown;
 }
 
-export function AccountSettingsTab({ user }: AccountSettingsTabProps) {
+export function AccountSettingsTab({ user, onProfileUpdated }: AccountSettingsTabProps) {
   const setUser = useAuthStore((state) => state.setUser);
   const { regions, loading: loadingLocations } = useUkLocations();
 
@@ -83,6 +84,7 @@ export function AccountSettingsTab({ user }: AccountSettingsTabProps) {
 
       if (data?.user) {
         setUser(data.user);
+        await onProfileUpdated?.();
         setSaved(true);
         setTimeout(() => setSaved(false), 4000);
       }

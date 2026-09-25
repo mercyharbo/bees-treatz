@@ -14,9 +14,10 @@ import { api } from '@/lib/api';
 
 interface SavedAddressesTabProps {
   user: UserProfile;
+  onProfileUpdated?: () => Promise<unknown> | unknown;
 }
 
-export function SavedAddressesTab({ user }: SavedAddressesTabProps) {
+export function SavedAddressesTab({ user, onProfileUpdated }: SavedAddressesTabProps) {
   const setUser = useAuthStore((state) => state.setUser);
   const { regions, loading: loadingLocations } = useUkLocations();
 
@@ -69,6 +70,7 @@ export function SavedAddressesTab({ user }: SavedAddressesTabProps) {
 
       if (data?.user) {
         setUser(data.user);
+        await onProfileUpdated?.();
         setSaved(true);
         setTimeout(() => setSaved(false), 4000);
       }

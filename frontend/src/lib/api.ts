@@ -31,12 +31,50 @@ export function extractErrorMessage(err: unknown, fallback = 'An unexpected erro
   return fallback;
 }
 
+// Singleton mutex to prevent multiple parallel refresh requests when concurrent calls receive 401
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const baseUrl = getBaseApiUrl();
+      const res = await fetch(`${baseUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        throw new Error('Refresh failed');
+      }
+
+      const data = await res.json();
+      if (data?.token && data?.user) {
+        useAuthStore.getState().setAuth(data.token, data.user);
+        return data.token as string;
+      }
+      return null;
+    } catch {
+      useAuthStore.getState().logout();
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 /**
- * Universal JSON fetch helper with automatic Auth token injection
+ * Universal JSON fetch helper with automatic Auth token injection and 401 auto-refresh retry
  */
 export async function apiFetch<T = unknown>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry = false
 ): Promise<T> {
   const baseUrl = getBaseApiUrl();
   let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -73,6 +111,22 @@ export async function apiFetch<T = unknown>(
     ...options,
     headers,
   });
+
+  // Intercept 401 Unauthorized in the middle of user activity:
+  // Automatically refresh access token using refresh token and retry original request
+  const isAuthEndpoint =
+    cleanEndpoint.startsWith('/auth/refresh') ||
+    cleanEndpoint.startsWith('/auth/login') ||
+    cleanEndpoint.startsWith('/auth/register');
+
+  if (res.status === 401 && !isRetry && !isAuthEndpoint && typeof window !== 'undefined') {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      const retryHeaders = new Headers(options.headers || {});
+      retryHeaders.set('Authorization', `Bearer ${newToken}`);
+      return apiFetch<T>(endpoint, { ...options, headers: retryHeaders }, true);
+    }
+  }
 
   const contentType = res.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');

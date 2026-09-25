@@ -10,6 +10,8 @@ import {
   updateCustomerProfileHandler,
   requestPasswordChangeCodeHandler,
   changePasswordHandler,
+  refreshCustomerTokenHandler,
+  logoutCustomerHandler,
 } from '../controllers/customerAuthController';
 import { loginAdminHandler, getAdminProfileHandler } from '../controllers/authController';
 import { requireCustomerAuth, requireAdminAuth } from '../middlewares/authMiddleware';
@@ -31,6 +33,12 @@ router.post('/register', registerLimiter, registerCustomerHandler);
 
 // Authenticate customer account
 router.post('/login', loginLimiter, loginCustomerHandler);
+
+// Refresh session tokens (rotate refresh token & issue new access token)
+router.post('/refresh', refreshCustomerTokenHandler);
+
+// Logout customer (revoke refresh token & clear cookies)
+router.post('/logout', logoutCustomerHandler);
 
 // Forgot password (request reset link)
 router.post('/forgot-password', forgotPasswordLimiter, forgotPasswordHandler);

@@ -13,9 +13,10 @@ interface ProfileTabsProps {
   user: UserProfile;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onProfileUpdated?: () => Promise<unknown> | unknown;
 }
 
-export function ProfileTabs({ user, activeTab, onTabChange }: ProfileTabsProps) {
+export function ProfileTabs({ user, activeTab, onTabChange, onProfileUpdated }: ProfileTabsProps) {
   return (
     <Card className="lg:col-span-2 rounded-md border border-gray-200/80 dark:border-white/10 bg-white dark:bg-gray-900/60 dark:backdrop-blur-xl shadow-none overflow-hidden p-6 sm:p-8">
       <Tabs value={activeTab} onValueChange={onTabChange} className="w-full flex flex-col gap-6">
@@ -51,7 +52,7 @@ export function ProfileTabs({ user, activeTab, onTabChange }: ProfileTabsProps) 
         </TabsList>
 
         <TabsContent value="settings">
-          <AccountSettingsTab user={user} />
+          <AccountSettingsTab user={user} onProfileUpdated={onProfileUpdated} />
         </TabsContent>
 
         <TabsContent value="orders">
@@ -59,7 +60,7 @@ export function ProfileTabs({ user, activeTab, onTabChange }: ProfileTabsProps) 
         </TabsContent>
 
         <TabsContent value="addresses">
-          <SavedAddressesTab user={user} />
+          <SavedAddressesTab user={user} onProfileUpdated={onProfileUpdated} />
         </TabsContent>
 
         <TabsContent value="security">
