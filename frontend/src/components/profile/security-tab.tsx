@@ -11,11 +11,11 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { UserProfile } from '@/types/auth';
-import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordStrengthBar, isPasswordSecure } from '@/components/auth/password-strength-bar';
+import { api } from '@/lib/api';
 
 interface SecurityTabProps {
   user: UserProfile;
@@ -70,29 +70,17 @@ export function SecurityTab({ user }: SecurityTabProps) {
     }
 
     setSendingCode(true);
-    const token = useAuthStore.getState().token;
 
     try {
-      const res = await fetch('/api/auth/change-password/request-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ currentPassword }),
+      const data = await api.post<{ message?: string }>('/auth/change-password/request-code', {
+        currentPassword,
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setPasswordError(data?.error || 'Failed to send verification code.');
-        return;
-      }
 
       setCodeSent(true);
       setResendCooldown(60);
       setCodeNotice(data?.message || 'A 6-digit verification code has been sent to your email.');
-    } catch {
-      setPasswordError('Unable to reach server. Please check your connection.');
+    } catch (err: any) {
+      setPasswordError(err?.message || 'Failed to send verification code.');
     } finally {
       setSendingCode(false);
     }
@@ -109,28 +97,14 @@ export function SecurityTab({ user }: SecurityTabProps) {
     }
 
     setSavingPassword(true);
-    const token = useAuthStore.getState().token;
 
     try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          confirmPassword,
-          code: passwordChangeCode.trim(),
-        }),
+      await api.post('/auth/change-password', {
+        currentPassword,
+        newPassword,
+        confirmPassword,
+        code: passwordChangeCode.trim(),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setPasswordError(data?.error || 'Failed to change password. Please check your verification code.');
-        return;
-      }
 
       setPasswordSaved(true);
       setCurrentPassword('');
@@ -140,8 +114,8 @@ export function SecurityTab({ user }: SecurityTabProps) {
       setCodeSent(false);
       setCodeNotice(null);
       setTimeout(() => setPasswordSaved(false), 5000);
-    } catch {
-      setPasswordError('Unable to reach server. Please check your connection.');
+    } catch (err: any) {
+      setPasswordError(err?.message || 'Failed to change password. Please check your verification code.');
     } finally {
       setSavingPassword(false);
     }

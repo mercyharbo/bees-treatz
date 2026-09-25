@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProfile } from '@/hooks/queries';
+import { api } from '@/lib/api';
 import { ProfileSummaryCard } from '@/components/profile/profile-summary-card';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
 import { AvatarModal } from '@/components/profile/avatar-modal';
@@ -14,6 +16,7 @@ function ProfileContent() {
   const initialTab = searchParams.get('tab') || 'settings';
 
   const { user, isAuthenticated, isLoading, initialize, logout, setUser } = useAuthStore();
+  const { user: profileData, mutate: mutateProfile } = useProfile();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   // Avatar Modal State
@@ -29,32 +32,18 @@ function ProfileContent() {
     initialize();
   }, [initialize]);
 
+  // Synchronize latest SWR profile data with store
+  useEffect(() => {
+    if (profileData) {
+      setUser(profileData);
+    }
+  }, [profileData, setUser]);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login?redirect=/profile');
     }
   }, [isAuthenticated, isLoading, router]);
-
-  // Synchronize latest profile data from backend on mount
-  useEffect(() => {
-    const token = useAuthStore.getState().token;
-    if (!token) return;
-
-    fetch('/api/auth/me', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user) {
-          setUser(data.user);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to sync profile from backend:', err);
-      });
-  }, [setUser]);
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
@@ -68,35 +57,23 @@ function ProfileContent() {
     router.push('/login');
   };
 
-  // Update Avatar helper
+  // Update Avatar using centralized api client
   const handleUpdateAvatar = async (avatarUrl: string | null) => {
     setUploadingAvatar(true);
-    const token = useAuthStore.getState().token;
 
     try {
-      const res = await fetch('/api/auth/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ avatarUrl }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error || 'Failed to update avatar.');
-      }
+      const data = await api.patch<{ user?: typeof user }>('/auth/profile', { avatarUrl });
 
       if (data?.user) {
         setUser(data.user);
+        await mutateProfile();
       }
     } finally {
       setUploadingAvatar(false);
     }
   };
 
-  // Resend email verification link for unverified account
+  // Resend email verification link using centralized api client
   const handleResendVerificationEmail = async () => {
     if (!user?.email) return;
     setResendingVerification(true);
@@ -104,21 +81,11 @@ function ProfileContent() {
     setVerificationError(null);
 
     try {
-      const res = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setVerificationError(data?.error || 'Failed to resend verification email.');
-      } else {
-        setVerificationResent(true);
-        setTimeout(() => setVerificationResent(false), 6000);
-      }
-    } catch {
-      setVerificationError('Unable to reach server. Please check your connection.');
+      await api.post('/auth/resend-verification', { email: user.email });
+      setVerificationResent(true);
+      setTimeout(() => setVerificationResent(false), 6000);
+    } catch (err: any) {
+      setVerificationError(err?.message || 'Failed to resend verification email.');
     } finally {
       setResendingVerification(false);
     }

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { useUkLocations } from '@/hooks/useUkLocations';
+import { useUkLocations } from '@/hooks/queries';
+import { api } from '@/lib/api';
 
 interface AccountSettingsTabProps {
   user: UserProfile;
@@ -16,7 +17,7 @@ interface AccountSettingsTabProps {
 
 export function AccountSettingsTab({ user }: AccountSettingsTabProps) {
   const setUser = useAuthStore((state) => state.setUser);
-  const { regions, isLoading: loadingLocations } = useUkLocations();
+  const { regions, loading: loadingLocations } = useUkLocations();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -68,39 +69,25 @@ export function AccountSettingsTab({ user }: AccountSettingsTabProps) {
     setSaved(false);
     setError(null);
 
-    const token = useAuthStore.getState().token;
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
     try {
-      const res = await fetch('/api/auth/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: fullName || user.name,
-          phone: phone.trim() || null,
-          address: address.trim() || null,
-          state: state.trim() || null,
-          city: city.trim() || null,
-          postcode: postcode.trim() || null,
-        }),
+      const data = await api.patch<{ user?: UserProfile }>('/auth/profile', {
+        name: fullName || user.name,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        state: state.trim() || null,
+        city: city.trim() || null,
+        postcode: postcode.trim() || null,
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data?.error || 'Failed to update profile details.');
-        return;
-      }
 
       if (data?.user) {
         setUser(data.user);
         setSaved(true);
         setTimeout(() => setSaved(false), 4000);
       }
-    } catch {
-      setError('Unable to reach server. Please check your connection.');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to update profile details.');
     } finally {
       setSaving(false);
     }

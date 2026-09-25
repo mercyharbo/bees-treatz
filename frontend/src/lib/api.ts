@@ -1,8 +1,9 @@
 import { Category, PostcodeValidationResponse, OrderRecord } from '../types';
+import { useAuthStore } from '@/store/useAuthStore';
 
 /**
  * Resolves the appropriate API base URL dynamically:
- * - On the client (browser): relative '/api' (proxied via Next.js Route Handler, hiding internal ports/domains)
+ * - On the client (browser): relative '/api' (proxied via Next.js Route Handler)
  * - On the server (SSR / RSC): direct backend URL from `process.env.API_URL`
  */
 export function getBaseApiUrl(): string {
@@ -31,17 +32,39 @@ export function extractErrorMessage(err: unknown, fallback = 'An unexpected erro
 }
 
 /**
- * Universal JSON fetch helper
+ * Universal JSON fetch helper with automatic Auth token injection
  */
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const baseUrl = getBaseApiUrl();
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${baseUrl}${cleanEndpoint}`;
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
 
+  // Normalize if caller passed '/api/...' and baseUrl is already '/api'
+  if (baseUrl === '/api' && cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.slice(4);
+  }
+
+  const url = `${baseUrl}${cleanEndpoint}`;
   const headers = new Headers(options.headers || {});
+
+  // Auto-inject Authorization header from Zustand store or localStorage if not provided
+  if (!headers.has('Authorization')) {
+    let token: string | null = null;
+    if (typeof window !== 'undefined') {
+      try {
+        token = useAuthStore.getState().token || localStorage.getItem('bt_auth_token');
+      } catch {
+        // Fallback for non-standard environments
+      }
+    }
+    if (token && token.trim().length > 0) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+  }
+
+  // Set default JSON Content-Type when body is not FormData
   if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
@@ -66,12 +89,48 @@ export async function apiFetch<T = unknown>(
   return data as T;
 }
 
+/**
+ * Standardized API client for all HTTP methods with automatic auth injection
+ *
+ * @example
+ * const res = await api.post<CreateUserResponse>('/admin/users', { name });
+ * const data = await api.get<UserProfile>('/auth/me');
+ */
+export const api = {
+  get: <T = unknown>(endpoint: string, options?: RequestInit) =>
+    apiFetch<T>(endpoint, { ...options, method: 'GET' }),
+
+  post: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  put: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  patch: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
+    apiFetch<T>(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  delete: <T = unknown>(endpoint: string, options?: RequestInit) =>
+    apiFetch<T>(endpoint, { ...options, method: 'DELETE' }),
+};
+
 // -------------------------------------------------------------
 // Typed API Services
 // -------------------------------------------------------------
 
 export async function fetchMenu(): Promise<Category[]> {
-  const data = await apiFetch<{ categories?: Category[] }>('/menu', { cache: 'no-store' });
+  const data = await api.get<{ categories?: Category[] }>('/menu', { cache: 'no-store' });
   return data.categories || [];
 }
 
@@ -79,9 +138,9 @@ export async function validatePostcode(
   postcode: string,
   subtotal: number = 0
 ): Promise<PostcodeValidationResponse> {
-  const data = await apiFetch<{ data: PostcodeValidationResponse }>('/delivery/validate-postcode', {
-    method: 'POST',
-    body: JSON.stringify({ postcode, subtotal }),
+  const data = await api.post<{ data: PostcodeValidationResponse }>('/delivery/validate-postcode', {
+    postcode,
+    subtotal,
   });
   return data.data;
 }
@@ -104,10 +163,7 @@ export async function submitOrder(orderPayload: {
     }>;
   }>;
 }): Promise<OrderRecord> {
-  const data = await apiFetch<{ order: OrderRecord }>('/orders', {
-    method: 'POST',
-    body: JSON.stringify(orderPayload),
-  });
+  const data = await api.post<{ order: OrderRecord }>('/orders', orderPayload);
   return data.order;
 }
 
@@ -115,17 +171,14 @@ export async function createCheckoutSession(orderId: string): Promise<{
   checkoutUrl: string;
   isSimulated?: boolean;
 }> {
-  return await apiFetch<{
+  return await api.post<{
     checkoutUrl: string;
     isSimulated?: boolean;
-  }>('/payments/create-checkout-session', {
-    method: 'POST',
-    body: JSON.stringify({ orderId }),
-  });
+  }>('/payments/create-checkout-session', { orderId });
 }
 
 export async function fetchOrderById(idOrNumber: string): Promise<OrderRecord> {
-  const data = await apiFetch<{ order: OrderRecord }>(`/orders/${idOrNumber}`, {
+  const data = await api.get<{ order: OrderRecord }>(`/orders/${idOrNumber}`, {
     cache: 'no-store',
   });
   return data.order;

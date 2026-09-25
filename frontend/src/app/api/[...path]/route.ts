@@ -6,10 +6,11 @@ const BACKEND_BASE_URL = process.env.API_URL || 'https://bees-treatz.onrender.co
 
 async function handleProxy(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> | { path: string[] } }
 ) {
   try {
-    const subpath = params.path ? params.path.join('/') : '';
+    const resolvedParams = await context.params;
+    const subpath = resolvedParams?.path ? resolvedParams.path.join('/') : '';
     const searchParams = request.nextUrl.search;
     const targetUrl = `${BACKEND_BASE_URL.replace(/\/$/, '')}/${subpath}${searchParams}`;
 
@@ -30,6 +31,14 @@ async function handleProxy(
         forwardedHeaders.set(key, value);
       }
     });
+
+    // Auto-inject Authorization header from bt_auth_token cookie if client omitted it
+    if (!forwardedHeaders.has('authorization')) {
+      const cookieToken = request.cookies.get('bt_auth_token')?.value;
+      if (cookieToken) {
+        forwardedHeaders.set('authorization', `Bearer ${cookieToken}`);
+      }
+    }
 
     const hasBody = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
     let body: BodyInit | undefined = undefined;

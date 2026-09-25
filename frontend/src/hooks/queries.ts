@@ -14,8 +14,15 @@ import {
   GetAllOrdersResponse,
   QueryResult,
 } from '@/types';
+import { UserProfile } from '@/types/auth';
 
 export type { QueryResult };
+
+export interface UkRegion {
+  name: string;
+  code: string;
+  cities: string[];
+}
 
 /**
  * Generic reusable SWR GET hook for any endpoint.
@@ -41,6 +48,50 @@ export function useGet<T = unknown, D = T>(
     loading: isLoading,
     isValidating,
     mutate,
+  };
+}
+
+/**
+ * Hook for fetching current authenticated customer profile via SWR.
+ * Automatically synchronizes with session cookie & token.
+ *
+ * @example
+ * const { user, loading, error, mutate } = useProfile();
+ */
+export function useProfile(options?: SWRConfiguration) {
+  const result = useGet<{ success?: boolean; user?: UserProfile }, UserProfile>(
+    '/auth/me',
+    options,
+    (res) => res.user as UserProfile
+  );
+
+  return {
+    user: result.data,
+    profile: result.data,
+    ...result,
+  };
+}
+
+/**
+ * Hook for fetching all UK regions and cities via SWR.
+ *
+ * @example
+ * const { regions, loading, error } = useUkLocations();
+ */
+export function useUkLocations(options?: SWRConfiguration) {
+  const result = useGet<{ success?: boolean; regions?: UkRegion[] }, UkRegion[]>(
+    '/locations/uk',
+    {
+      revalidateOnFocus: false,
+      revalidateIfStale: false,
+      ...options,
+    },
+    (res) => res.regions || []
+  );
+
+  return {
+    regions: result.data || [],
+    ...result,
   };
 }
 
