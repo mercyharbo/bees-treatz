@@ -7,6 +7,7 @@ import {
   verifyEmailHandler,
   resendVerificationHandler,
   getCustomerProfileHandler,
+  updateCustomerProfileHandler,
 } from '../controllers/customerAuthController';
 import { loginAdminHandler, getAdminProfileHandler } from '../controllers/authController';
 import { requireCustomerAuth, requireAdminAuth } from '../middlewares/authMiddleware';
@@ -43,6 +44,9 @@ router.post('/resend-verification', resendVerificationLimiter, resendVerificatio
 
 // Current customer profile
 router.get('/me', requireCustomerAuth, getCustomerProfileHandler);
+
+// Update customer profile & avatar
+router.patch('/profile', requireCustomerAuth, updateCustomerProfileHandler);
 
 // ==========================================
 // Admin Authentication Routes

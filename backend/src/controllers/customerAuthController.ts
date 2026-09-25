@@ -59,6 +59,15 @@ const ResendVerificationSchema = z.object({
   email: z.string().trim().email('Invalid email address'),
 });
 
+const UpdateProfileSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100).optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  avatarUrl: z.string().nullable().optional(),
+  address: z.string().trim().max(255).nullable().optional(),
+  city: z.string().trim().max(100).nullable().optional(),
+  postcode: z.string().trim().max(20).nullable().optional(),
+});
+
 /**
  * POST /api/auth/register
  * Creates a customer account, hashes password, generates zero-knowledge verification token
@@ -223,6 +232,10 @@ export async function loginCustomerHandler(req: Request, res: Response): Promise
         email: user.email,
         isEmailVerified: user.isEmailVerified,
         phone: user.phone,
+        avatarUrl: user.avatarUrl,
+        address: user.address,
+        city: user.city,
+        postcode: user.postcode,
       },
     });
   } catch (error: any) {
@@ -447,6 +460,10 @@ export async function getCustomerProfileHandler(req: Request, res: Response): Pr
         name: true,
         email: true,
         phone: true,
+        avatarUrl: true,
+        address: true,
+        city: true,
+        postcode: true,
         isEmailVerified: true,
         createdAt: true,
       },
@@ -466,3 +483,64 @@ export async function getCustomerProfileHandler(req: Request, res: Response): Pr
     res.status(500).json({ error: 'Internal server error fetching profile.' });
   }
 }
+
+/**
+ * PATCH /api/auth/profile
+ * Updates the authenticated customer profile details & avatar
+ */
+export async function updateCustomerProfileHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized.' });
+      return;
+    }
+
+    const parseResult = UpdateProfileSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: parseResult.error.errors[0]?.message || 'Invalid input data',
+        errors: parseResult.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const { name, phone, avatarUrl, address, city, postcode } = parseResult.data;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(name !== undefined && { name: name.trim() }),
+        ...(phone !== undefined && { phone: phone ? phone.trim() : null }),
+        ...(avatarUrl !== undefined && { avatarUrl: avatarUrl ? avatarUrl.trim() : null }),
+        ...(address !== undefined && { address: address ? address.trim() : null }),
+        ...(city !== undefined && { city: city ? city.trim() : null }),
+        ...(postcode !== undefined && { postcode: postcode ? postcode.trim().toUpperCase() : null }),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        avatarUrl: true,
+        address: true,
+        city: true,
+        postcode: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ error: 'Internal server error updating profile.' });
+  }
+}
+

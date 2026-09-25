@@ -13,7 +13,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -133,6 +133,9 @@ export function Navbar() {
                   }
                 >
                   <Avatar className="size-8.5 ring-2 ring-amber-500/50 transition-transform group-hover:scale-105">
+                    {user.avatarUrl && (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    )}
                     <AvatarFallback className="bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-bold text-xs">
                       {userInitial}
                     </AvatarFallback>
@@ -242,6 +245,9 @@ export function Navbar() {
               <>
                 <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 dark:bg-white/5 rounded-xl">
                   <Avatar className="size-9 ring-1 ring-amber-500/40">
+                    {user.avatarUrl && (
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    )}
                     <AvatarFallback className="bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-bold text-xs">
                       {userInitial}
                     </AvatarFallback>

@@ -10,7 +10,11 @@ export interface UserProfile {
   id: string;
   email: string;
   name: string;
-  phone?: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  address?: string | null;
+  city?: string | null;
+  postcode?: string | null;
   isEmailVerified?: boolean;
 }
 
