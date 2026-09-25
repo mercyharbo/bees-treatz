@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProfile } from '@/hooks/queries';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 
@@ -32,10 +34,20 @@ export function Navbar() {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user: storeUser, isAuthenticated: storeAuth, logout } = useAuthStore();
+  const { user: profileUser } = useProfile();
+  const user = profileUser || storeUser;
+  const isAuthenticated = Boolean(storeAuth || user);
+
   const items = useCartStore((state) => state.items);
   const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
+
+  useEffect(() => {
+    setMounted(true);
+    useAuthStore.getState().initialize();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,9 +66,14 @@ export function Navbar() {
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Continue client logout even if backend fails
+    }
     logout();
-    router.push('/login');
+    router.push('/');
   };
 
   return (
@@ -121,7 +138,9 @@ export function Navbar() {
 
           {/* Desktop User Profile Avatar with Dropdown */}
           <div className="hidden sm:inline-block">
-            {isAuthenticated && user ? (
+            {!mounted ? (
+              <div className="h-9 w-20" />
+            ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -241,7 +260,9 @@ export function Navbar() {
             </Link>
           ))}
           <div className="pt-2 border-t border-gray-100 dark:border-white/10 space-y-2">
-            {isAuthenticated && user ? (
+            {!mounted ? (
+              <div className="h-10 w-full" />
+            ) : isAuthenticated && user ? (
               <>
                 <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 dark:bg-white/5 rounded-xl">
                   <Avatar className="size-9 ring-1 ring-amber-500/40">

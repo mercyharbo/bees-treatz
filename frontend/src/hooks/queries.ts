@@ -15,6 +15,7 @@ import {
   QueryResult,
 } from '@/types';
 import { UserProfile } from '@/types/auth';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export type { QueryResult };
 
@@ -59,10 +60,28 @@ export function useGet<T = unknown, D = T>(
  * const { user, loading, error, mutate } = useProfile();
  */
 export function useProfile(options?: SWRConfiguration) {
+  const storeToken = useAuthStore((state) => state.token);
+  const storeAuth = useAuthStore((state) => state.isAuthenticated);
+
+  const shouldFetch =
+    storeAuth ||
+    Boolean(storeToken) ||
+    (typeof window !== 'undefined' &&
+      Boolean(
+        localStorage.getItem('bt_auth_token') ||
+        localStorage.getItem('bt_auth_user') ||
+        document.cookie.includes('bt_auth_token')
+      ));
+
   const result = useGet<{ success?: boolean; user?: UserProfile }, UserProfile>(
-    '/auth/me',
+    shouldFetch ? '/auth/me' : null,
     options,
-    (res) => res.user as UserProfile
+    (res) => {
+      if (res?.user && typeof window !== 'undefined') {
+        useAuthStore.getState().setUser(res.user);
+      }
+      return res.user as UserProfile;
+    }
   );
 
   return {

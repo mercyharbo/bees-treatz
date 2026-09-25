@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfile } from '@/hooks/queries';
+import { UserProfile } from '@/types/auth';
 import { api } from '@/lib/api';
 import { ProfileSummaryCard } from '@/components/profile/profile-summary-card';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
@@ -50,7 +51,10 @@ function ProfileContent() {
     setUploadingAvatar(true);
 
     try {
-      await api.patch('/auth/profile', { avatarUrl });
+      const data = await api.patch<{ user?: UserProfile }>('/auth/profile', { avatarUrl });
+      if (data?.user) {
+        useAuthStore.getState().setUser(data.user);
+      }
       await refreshProfile();
     } finally {
       setUploadingAvatar(false);
