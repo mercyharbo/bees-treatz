@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { useEffect, useState } from 'react';
-import { mutate } from 'swr';
 import { UserProfile } from '@/types/auth';
 
 interface AuthState {
@@ -74,8 +72,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         // Expire both access token and refresh token cookies
         document.cookie = 'bt_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         document.cookie = 'bt_refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-        // Invalidate cached profile in SWR
-        mutate('/auth/me', null, false);
+        // Dynamically invalidate cached profile in SWR on client
+        import('swr').then(({ mutate }) => mutate('/auth/me', null, false)).catch(() => {});
       } catch (e) {
         console.error('Failed to clear auth session:', e);
       }
@@ -136,34 +134,3 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null, isAuthenticated: false, isLoading: false });
   },
 }));
-
-/**
- * Hydration helper to safely consume auth store without hydration errors
- */
-export function useHydratedAuthStore<T>(
-  selector: (state: AuthState) => T,
-  fallback: T
-): T {
-  const result = useAuthStore(selector);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  return hydrated ? result : fallback;
-}
-
-/**
- * Global component mounted in RootLayout to ensure authentication is initialized
- * across every route on the client.
- */
-export function AuthInitializer() {
-  const initialize = useAuthStore((state) => state.initialize);
-
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
-  return null;
-}

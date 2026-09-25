@@ -1,14 +1,19 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SWRConfig } from 'swr';
 import { apiFetch } from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface SWRProviderProps {
   children: React.ReactNode;
 }
 
 export function SWRProvider({ children }: SWRProviderProps) {
+  useEffect(() => {
+    useAuthStore.getState().initialize();
+  }, []);
+
   return (
     <SWRConfig
       value={{
