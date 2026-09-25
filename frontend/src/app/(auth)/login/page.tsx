@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { AuthLogo } from '@/components/auth/auth-logo';
 import { SocialAuthButtons } from '@/components/auth/social-auth-buttons';
@@ -13,8 +13,10 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/';
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [email, setEmail] = useState('');
@@ -70,7 +72,7 @@ export default function LoginPage() {
       }
 
       setAuth(data.token, data.user);
-      router.push('/');
+      router.push(redirectUrl);
     } catch {
       setError('Unable to reach server. Please check your connection.');
       setLoading(false);
@@ -236,5 +238,13 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-10 text-sm text-gray-500">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
