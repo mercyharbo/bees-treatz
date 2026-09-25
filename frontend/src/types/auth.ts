@@ -14,6 +14,7 @@ export interface UserProfile {
   avatarUrl?: string | null;
   address?: string | null;
   city?: string | null;
+  state?: string | null;
   postcode?: string | null;
   isEmailVerified?: boolean;
 }

@@ -91,6 +91,7 @@ const UpdateProfileSchema = z.object({
   avatarUrl: z.string().nullable().optional(),
   address: z.string().trim().max(255).nullable().optional(),
   city: z.string().trim().max(100).nullable().optional(),
+  state: z.string().trim().max(100).nullable().optional(),
   postcode: z.string().trim().max(20).nullable().optional(),
 });
 
@@ -261,6 +262,7 @@ export async function loginCustomerHandler(req: Request, res: Response): Promise
         avatarUrl: user.avatarUrl,
         address: user.address,
         city: user.city,
+        state: user.state,
         postcode: user.postcode,
       },
     });
@@ -489,6 +491,7 @@ export async function getCustomerProfileHandler(req: Request, res: Response): Pr
         avatarUrl: true,
         address: true,
         city: true,
+        state: true,
         postcode: true,
         isEmailVerified: true,
         createdAt: true,
@@ -532,7 +535,7 @@ export async function updateCustomerProfileHandler(req: Request, res: Response):
       return;
     }
 
-    const { name, phone, avatarUrl, address, city, postcode } = parseResult.data;
+    const { name, phone, avatarUrl, address, city, state, postcode } = parseResult.data;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -542,6 +545,7 @@ export async function updateCustomerProfileHandler(req: Request, res: Response):
         ...(avatarUrl !== undefined && { avatarUrl: avatarUrl ? avatarUrl.trim() : null }),
         ...(address !== undefined && { address: address ? address.trim() : null }),
         ...(city !== undefined && { city: city ? city.trim() : null }),
+        ...(state !== undefined && { state: state ? state.trim() : null }),
         ...(postcode !== undefined && { postcode: postcode ? postcode.trim().toUpperCase() : null }),
       },
       select: {
@@ -552,6 +556,7 @@ export async function updateCustomerProfileHandler(req: Request, res: Response):
         avatarUrl: true,
         address: true,
         city: true,
+        state: true,
         postcode: true,
         isEmailVerified: true,
         createdAt: true,

@@ -16,6 +16,7 @@ model User {
   avatarUrl            String?   // Custom uploaded photo or preset avatar URL/DataURI
   address              String?   // Street delivery address
   city                 String?   // City (e.g. London)
+  state                String?   // UK County / Region (e.g. Greater London)
   postcode             String?   // UK Postcode (e.g. SE15 5BA)
   isEmailVerified      Boolean   @default(false)
   emailVerifyToken     String?   // SHA-256 hash of verification token
