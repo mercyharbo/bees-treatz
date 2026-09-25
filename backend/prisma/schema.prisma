@@ -22,6 +22,8 @@ model User {
   emailVerifyExpires   DateTime?
   passwordResetToken   String?   // SHA-256 hash of reset token
   passwordResetExpires DateTime?
+  passwordChangeCode    String?   // SHA-256 hash of 6-digit verification OTP
+  passwordChangeExpires DateTime?
   failedLoginAttempts  Int       @default(0)
   lockoutUntil         DateTime?
   lastLoginAt          DateTime?

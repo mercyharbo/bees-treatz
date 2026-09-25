@@ -20,6 +20,9 @@ import {
   Trash2,
   X,
   Sparkles,
+  KeyRound,
+  Send,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
@@ -109,12 +112,32 @@ function ProfileContent() {
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Security Form States (client placeholder for now)
+  // Security Form States (Two-Factor Password Change with Email OTP)
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordChangeCode, setPasswordChangeCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [passwordSaved, setPasswordSaved] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [codeNotice, setCodeNotice] = useState<string | null>(null);
+
+  // Email Verification Resend States
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+
+  // 60-second cooldown timer for resending OTP code
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   useEffect(() => {
     initialize();
@@ -317,9 +340,16 @@ function ProfileContent() {
     }
   };
 
-  const handleSavePassword = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Request 6-digit verification code to be sent to user's email via Resend
+  const handleRequestPasswordCode = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setPasswordError(null);
+    setCodeNotice(null);
+
+    if (!currentPassword) {
+      setPasswordError('Please enter your current password.');
+      return;
+    }
 
     if (!isPasswordSecure(newPassword)) {
       setPasswordError('Please ensure your new password satisfies all security requirements.');
@@ -331,11 +361,115 @@ function ProfileContent() {
       return;
     }
 
-    setPasswordSaved(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setTimeout(() => setPasswordSaved(false), 4000);
+    if (newPassword === currentPassword) {
+      setPasswordError('New password must be different from your current password.');
+      return;
+    }
+
+    setSendingCode(true);
+    const token = useAuthStore.getState().token;
+
+    try {
+      const res = await fetch('/api/auth/change-password/request-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data?.error || 'Failed to send verification code.');
+        return;
+      }
+
+      setCodeSent(true);
+      setResendCooldown(60);
+      setCodeNotice(data?.message || 'A 6-digit verification code has been sent to your email.');
+    } catch {
+      setPasswordError('Unable to reach server. Please check your connection.');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  // Confirm password change with 6-digit OTP code
+  const handleConfirmChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+
+    if (!passwordChangeCode || passwordChangeCode.trim().length !== 6) {
+      setPasswordError('Please enter the 6-digit verification code sent to your email.');
+      return;
+    }
+
+    setSavingPassword(true);
+    const token = useAuthStore.getState().token;
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword,
+          code: passwordChangeCode.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data?.error || 'Failed to change password. Please check your verification code.');
+        return;
+      }
+
+      setPasswordSaved(true);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordChangeCode('');
+      setCodeSent(false);
+      setCodeNotice(null);
+      setTimeout(() => setPasswordSaved(false), 5000);
+    } catch {
+      setPasswordError('Unable to reach server. Please check your connection.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  // Resend email verification link for unverified account
+  const handleResendVerificationEmail = async () => {
+    if (!user?.email) return;
+    setResendingVerification(true);
+    setVerificationResent(false);
+    setVerificationError(null);
+
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setVerificationError(data?.error || 'Failed to resend verification email.');
+      } else {
+        setVerificationResent(true);
+        setTimeout(() => setVerificationResent(false), 6000);
+      }
+    } catch {
+      setVerificationError('Unable to reach server. Please check your connection.');
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   if (isLoading || !isAuthenticated || !user) {
@@ -439,7 +573,7 @@ function ProfileContent() {
 
           {/* Unverified Action Banner */}
           {!user.isEmailVerified && (
-            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 space-y-2 text-left">
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 space-y-2.5 text-left">
               <p className="font-semibold flex items-center gap-1.5">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 Verify your email address
@@ -447,15 +581,42 @@ function ProfileContent() {
               <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed">
                 Confirm your email to unlock all loyalty perks and order tracking updates.
               </p>
-              <Button
-                asChild
-                size="sm"
-                className="w-full rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs h-8 cursor-pointer shadow-sm"
-              >
-                <Link href={`/verify-email?email=${encodeURIComponent(user.email)}`}>
-                  Verify Now
-                </Link>
-              </Button>
+
+              {verificationResent && (
+                <div className="p-2 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 animate-in fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                  <span>Verification link sent to your inbox!</span>
+                </div>
+              )}
+
+              {verificationError && (
+                <div className="p-2 rounded-xl bg-red-100/70 dark:bg-red-950/50 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-300 text-[11px] font-semibold flex items-center gap-1.5 animate-in fade-in">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600 dark:text-red-400" />
+                  <span>{verificationError}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button
+                  asChild
+                  size="sm"
+                  className="rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs h-8 cursor-pointer shadow-sm"
+                >
+                  <Link href={`/verify-email?email=${encodeURIComponent(user.email)}`}>
+                    Verify Now
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleResendVerificationEmail}
+                  disabled={resendingVerification}
+                  className="rounded-xl border-amber-300 dark:border-amber-700 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 text-amber-900 dark:text-amber-200 font-semibold text-xs h-8 cursor-pointer disabled:opacity-50"
+                >
+                  {resendingVerification ? 'Sending...' : 'Resend Link'}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -778,7 +939,7 @@ function ProfileContent() {
               {passwordSaved && (
                 <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3 text-xs text-emerald-800 dark:text-emerald-300 animate-in fade-in">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <p className="font-semibold">Password updated successfully!</p>
+                  <p className="font-semibold">Password updated successfully! A security confirmation was sent to your email.</p>
                 </div>
               )}
 
@@ -789,7 +950,14 @@ function ProfileContent() {
                 </div>
               )}
 
-              <form onSubmit={handleSavePassword} className="space-y-5 max-w-lg">
+              {codeNotice && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex items-center gap-3 text-xs text-amber-800 dark:text-amber-300 animate-in fade-in">
+                  <Mail className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <p className="font-semibold">{codeNotice}</p>
+                </div>
+              )}
+
+              <form onSubmit={codeSent ? handleConfirmChangePassword : handleRequestPasswordCode} className="space-y-5 max-w-lg">
                 <div className="space-y-1.5">
                   <Label htmlFor="current-pass" className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Current Password
@@ -798,9 +966,13 @@ function ProfileContent() {
                     id="current-pass"
                     type="password"
                     value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    disabled={codeSent}
                     placeholder="Enter current password"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400 disabled:opacity-60"
                     required
                   />
                 </div>
@@ -813,9 +985,13 @@ function ProfileContent() {
                     id="new-pass"
                     type="password"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    disabled={codeSent}
                     placeholder="Enter new password (min 8 chars)"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400 disabled:opacity-60"
                     required
                   />
                   <PasswordStrengthBar password={newPassword} />
@@ -829,23 +1005,118 @@ function ProfileContent() {
                     id="confirm-new-pass"
                     type="password"
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (passwordError) setPasswordError(null);
+                    }}
+                    disabled={codeSent}
                     placeholder="Re-type new password"
-                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400"
+                    className="h-11 rounded-xl text-sm bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus-visible:border-orange-500 dark:focus-visible:border-orange-400 disabled:opacity-60"
                     required
                   />
                 </div>
 
+                {/* Step 2: 2FA Verification Code Box */}
+                {codeSent && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-orange-50/70 dark:bg-orange-950/20 border-2 border-dashed border-orange-300 dark:border-orange-800 space-y-4 animate-in fade-in">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="otp-code" className="text-xs font-bold text-orange-950 dark:text-orange-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <KeyRound className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
+                          6-Digit Email Verification Code
+                        </Label>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          We sent a code to <span className="font-semibold text-gray-900 dark:text-white">{user.email}</span>. Code is valid for 15 minutes.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCodeSent(false);
+                          setPasswordChangeCode('');
+                        }}
+                        className="text-xs text-gray-500 hover:text-gray-800 dark:hover:text-white underline cursor-pointer"
+                      >
+                        Edit Passwords
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Input
+                        id="otp-code"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        autoFocus
+                        value={passwordChangeCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setPasswordChangeCode(val);
+                          if (passwordError) setPasswordError(null);
+                        }}
+                        placeholder="••••••"
+                        className="h-12 rounded-xl text-center text-xl font-mono font-extrabold tracking-[0.5em] bg-white dark:bg-gray-900 border border-orange-300 dark:border-orange-700 text-gray-900 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-600 focus-visible:border-orange-500 focus-visible:ring-orange-500/20"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-gray-500 dark:text-gray-400">Didn&apos;t receive code?</span>
+                      <button
+                        type="button"
+                        onClick={handleRequestPasswordCode}
+                        disabled={resendCooldown > 0 || sendingCode}
+                        className="font-semibold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${sendingCode ? 'animate-spin' : ''}`} />
+                        <span>{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-2">
-                  <Button
-                    type="submit"
-                    className="rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs px-6 h-10 shadow-sm cursor-pointer"
-                  >
-                    Change Password
-                  </Button>
+                  {!codeSent ? (
+                    <Button
+                      type="submit"
+                      disabled={sendingCode || !currentPassword || !newPassword || !confirmPassword}
+                      className="rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-semibold text-xs px-6 h-10 shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {sendingCode ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Sending Verification Code...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Send Verification Code</span>
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      disabled={savingPassword || passwordChangeCode.trim().length !== 6}
+                      className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-6 h-10 shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {savingPassword ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Verifying & Updating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Confirm & Update Password</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </form>
             </TabsContent>
+
           </Tabs>
         </Card>
       </div>

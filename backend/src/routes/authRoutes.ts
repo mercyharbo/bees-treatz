@@ -8,6 +8,8 @@ import {
   resendVerificationHandler,
   getCustomerProfileHandler,
   updateCustomerProfileHandler,
+  requestPasswordChangeCodeHandler,
+  changePasswordHandler,
 } from '../controllers/customerAuthController';
 import { loginAdminHandler, getAdminProfileHandler } from '../controllers/authController';
 import { requireCustomerAuth, requireAdminAuth } from '../middlewares/authMiddleware';
@@ -47,6 +49,10 @@ router.get('/me', requireCustomerAuth, getCustomerProfileHandler);
 
 // Update customer profile & avatar
 router.patch('/profile', requireCustomerAuth, updateCustomerProfileHandler);
+
+// Change password with 2FA email verification code
+router.post('/change-password/request-code', requireCustomerAuth, requestPasswordChangeCodeHandler);
+router.post('/change-password', requireCustomerAuth, changePasswordHandler);
 
 // ==========================================
 // Admin Authentication Routes

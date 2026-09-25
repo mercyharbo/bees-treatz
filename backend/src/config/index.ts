@@ -21,4 +21,8 @@ export const config = {
     perMileFee: parseFloat(process.env.PER_MILE_FEE || '0.80'),
     freeDeliveryThreshold: parseFloat(process.env.FREE_DELIVERY_THRESHOLD || '50.00'),
   },
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    from: process.env.EMAIL_FROM || "Bee's Treatz <noreply@switftlink.live>",
+  },
 };

@@ -10,8 +10,14 @@ import {
   verifyPassword,
   performDummyBcryptCompare,
   normalizeEmail,
+  generateNumericOtp,
 } from '../utils/security';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/emailService';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendPasswordChangeCodeEmail,
+  sendPasswordChangedNotificationEmail,
+} from '../utils/emailService';
 
 // Password complexity: minimum 8 characters, at least 1 uppercase, 1 lowercase, 1 number, and 1 special symbol
 const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>_\-\[\]]).{8,}$/;
@@ -47,6 +53,26 @@ const ResetPasswordSchema = z
     confirmPassword: z.string().min(1, 'Password confirmation is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+const RequestPasswordChangeCodeSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+});
+
+const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(100)
+      .regex(strongPasswordRegex, 'Password must include uppercase, lowercase, number, and special character'),
+    confirmPassword: z.string().min(1, 'Password confirmation is required'),
+    code: z.string().trim().length(6, 'Verification code must be 6 digits'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
@@ -541,6 +567,150 @@ export async function updateCustomerProfileHandler(req: Request, res: Response):
   } catch (error: any) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Internal server error updating profile.' });
+  }
+}
+
+/**
+ * POST /api/auth/change-password/request-code
+ * Validates current password, generates 6-digit OTP code, and dispatches via Resend
+ */
+export async function requestPasswordChangeCodeHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const parseResult = RequestPasswordChangeCodeSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({ error: parseResult.error.errors[0]?.message || 'Current password is required' });
+      return;
+    }
+
+    const { currentPassword } = parseResult.data;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User account not found' });
+      return;
+    }
+
+    // Verify current password before generating OTP
+    const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      res.status(400).json({ error: 'Incorrect current password. Please try again.' });
+      return;
+    }
+
+    // Generate 6-digit numeric OTP and 15-minute expiration
+    const otpCode = generateNumericOtp(6);
+    const hashedCode = hashToken(otpCode);
+    const codeExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordChangeCode: hashedCode,
+        passwordChangeExpires: codeExpires,
+      },
+    });
+
+    // Dispatch email via Resend
+    await sendPasswordChangeCodeEmail(user.email, user.name, otpCode);
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to ${user.email}.`,
+    });
+  } catch (error: any) {
+    console.error('Request password change code error:', error);
+    res.status(500).json({ error: 'Internal server error requesting verification code.' });
+  }
+}
+
+/**
+ * POST /api/auth/change-password
+ * Verifies 6-digit OTP code + current password, updates to new password, and notifies user
+ */
+export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    const parseResult = ChangePasswordSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: parseResult.error.errors[0]?.message || 'Validation error',
+      });
+      return;
+    }
+
+    const { currentPassword, newPassword, code } = parseResult.data;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'User account not found' });
+      return;
+    }
+
+    // Verify current password
+    const isCurrentPasswordCorrect = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isCurrentPasswordCorrect) {
+      res.status(400).json({ error: 'Incorrect current password.' });
+      return;
+    }
+
+    // Check if new password is same as current password
+    const isSamePassword = await verifyPassword(newPassword, user.passwordHash);
+    if (isSamePassword) {
+      res.status(400).json({ error: 'New password must be different from your current password.' });
+      return;
+    }
+
+    // Verify OTP code
+    const hashedCode = hashToken(code);
+    if (!user.passwordChangeCode || user.passwordChangeCode !== hashedCode) {
+      res.status(400).json({ error: 'Invalid verification code. Please check the code sent to your email.' });
+      return;
+    }
+
+    if (!user.passwordChangeExpires || user.passwordChangeExpires < new Date()) {
+      res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+      return;
+    }
+
+    // Hash new password and clear OTP
+    const newPasswordHash = await hashPassword(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: newPasswordHash,
+        passwordChangeCode: null,
+        passwordChangeExpires: null,
+      },
+    });
+
+    // Send security notification email
+    await sendPasswordChangedNotificationEmail(user.email, user.name);
+
+    res.json({
+      success: true,
+      message: 'Your password has been changed successfully.',
+    });
+  } catch (error: any) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error changing password.' });
   }
 }
 
