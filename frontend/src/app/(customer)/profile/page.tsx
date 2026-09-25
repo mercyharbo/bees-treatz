@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { ProfileSummaryCard } from '@/components/profile/profile-summary-card';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
 import { AvatarModal } from '@/components/profile/avatar-modal';
+import { ProfileSkeleton } from '@/components/profile/profile-skeleton';
 
 function ProfileContent() {
   const router = useRouter();
@@ -124,14 +125,7 @@ function ProfileContent() {
   };
 
   if (isLoading || !isAuthenticated || !user) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs text-gray-500 dark:text-gray-400">Loading your profile...</p>
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (
@@ -182,7 +176,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="text-center py-20 text-xs text-gray-500">Loading profile...</div>}>
+    <Suspense fallback={<ProfileSkeleton />}>
       <ProfileContent />
     </Suspense>
   );
