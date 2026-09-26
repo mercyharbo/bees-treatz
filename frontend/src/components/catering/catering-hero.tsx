@@ -62,16 +62,24 @@ export function CateringHero() {
           </Button>
         </div>
 
-        {/* Clean Rating Row (NO pill container, NO green pill) */}
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-          <div className="flex text-amber-500">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
-            ))}
+        {/* Clean Rating Row (Responsive layout preventing mobile line breaks) */}
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-3 text-xs text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-2">
+            <div className="flex text-amber-500 shrink-0">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-500 text-amber-500" />
+              ))}
+            </div>
+            <span className="font-extrabold text-gray-900 dark:text-white whitespace-nowrap">
+              4.9 / 5
+            </span>
           </div>
-          <span className="font-extrabold text-gray-900 dark:text-white">4.9 / 5</span>
-          <span className="text-gray-400">·</span>
-          <span className="font-medium text-gray-600 dark:text-gray-300">Over 50+ Luxury Events Catered Across the UK</span>
+
+          <span className="hidden sm:inline text-gray-400">·</span>
+
+          <span className="font-medium text-gray-600 dark:text-gray-300 text-center text-xs whitespace-nowrap sm:whitespace-normal">
+            Over 50+ Luxury Events Catered Across the UK
+          </span>
         </div>
 
         {/* Hero Visual Banner */}

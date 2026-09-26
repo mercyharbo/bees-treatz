@@ -7,9 +7,10 @@ export function Footer() {
       {/* Soft Ambient Radial Glow (Attachment 4) */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        {/* Top Grid: Brand & Link Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 pb-12 sm:pb-16">
+      {/* Full width container with generous responsive padding */}
+      <div className="relative w-full px-6 sm:px-10 lg:px-16 xl:px-20 2xl:px-24">
+        {/* Top Grid: Brand & Link Columns spanning full width */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12 2xl:gap-16 pb-12 sm:pb-16">
           {/* Brand Info (Attachment 4 Left Column) */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="inline-flex items-center gap-2.5">
@@ -20,7 +21,7 @@ export function Footer() {
                 Bee&apos;s Treatz
               </span>
             </Link>
-            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-sm">
+            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-md">
               Authentic Nigerian kitchen delivering firewood-style Party Jollof, hearty Egusi, and spicy Suya skewers straight to your doorstep across the UK.
             </p>
           </div>
