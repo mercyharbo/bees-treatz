@@ -145,3 +145,22 @@ model OrderItem {
   selectedOptions String    @default("[]")
   createdAt       DateTime  @default(now())
 }
+
+model CateringInquiry {
+  id            String   @id @default(uuid())
+  clientName    String
+  clientEmail   String
+  clientPhone   String
+  eventType     String   // WEDDING | CORPORATE | INTIMATE | BIRTHDAY | OTHER
+  eventDate     DateTime
+  venueLocation String
+  venuePostcode String?
+  guestCount    Int
+  services      String   // JSON string array e.g. ["GRAZING_TABLE", "CANAPES", "MOBILE_BAR"]
+  budgetRange   String?  // e.g. "£1,500 - £3,000"
+  dietaryNotes  String?
+  stylingNotes  String?
+  status        String   @default("NEW") // NEW | CONTACTED | QUOTED | CONFIRMED | DECLINED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

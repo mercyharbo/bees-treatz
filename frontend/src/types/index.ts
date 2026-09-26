@@ -6,3 +6,4 @@ export * from './payment';
 export * from './cart';
 export * from './health';
 export * from './api';
+export * from './catering';

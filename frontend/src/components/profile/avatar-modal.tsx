@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Sparkles, X, AlertCircle, Upload, Trash2 } from 'lucide-react';
+import { Camera, X, AlertCircle, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Label } from '@/components/ui/label';
@@ -125,7 +125,7 @@ export function AvatarModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-white/10">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-orange-500" />
+            <Camera className="w-5 h-5 text-orange-500" />
             <h3 className="font-extrabold text-lg text-gray-900 dark:text-white">
               Choose Profile Avatar
             </h3>

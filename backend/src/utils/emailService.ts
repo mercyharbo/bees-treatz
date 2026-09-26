@@ -229,3 +229,103 @@ export async function sendPasswordChangedNotificationEmail(email: string, name: 
     html: wrapBrandTemplate(contentHtml),
   });
 }
+
+/**
+ * Send Catering Inquiry Confirmation to the prospective client
+ */
+export async function sendCateringInquiryConfirmationEmail(params: {
+  clientName: string;
+  clientEmail: string;
+  eventType: string;
+  eventDate: string;
+  guestCount: number;
+  services: string[];
+}): Promise<boolean> {
+  const subject = `We've received your event catering inquiry! - Bee's Treatz`;
+  const text = `Hi ${params.clientName},\n\nThank you for reaching out to Bee's Treatz! We have received your catering and event styling inquiry for your ${params.eventType} on ${params.eventDate} (${params.guestCount} guests).\n\nChef Bee and our events team will review your details and respond with a bespoke proposal within 24 to 48 hours.\n\nWarm regards,\nBee's Treatz Events Team`;
+
+  const contentHtml = `
+    <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0;">Event Inquiry Received! &#10024;</h2>
+    <p>Hi <strong>${params.clientName}</strong>,</p>
+    <p>Thank you for inquiring with <strong>Bee's Treatz</strong> for your upcoming celebration. We are thrilled at the opportunity to style and cater your special occasion!</p>
+    
+    <div style="background: #fff7ed; border-radius: 12px; padding: 18px; border: 1px solid #fed7aa; margin: 20px 0;">
+      <h3 style="margin: 0 0 10px 0; font-size: 15px; color: #9a3412;">Event Summary:</h3>
+      <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #431407; line-height: 1.6;">
+        <li><strong>Event Type:</strong> ${params.eventType}</li>
+        <li><strong>Event Date:</strong> ${params.eventDate}</li>
+        <li><strong>Guest Count:</strong> ${params.guestCount} guests</li>
+        <li><strong>Services Requested:</strong> ${params.services.join(', ')}</li>
+        <li><strong>Certification:</strong> 100% Certified Halal</li>
+      </ul>
+    </div>
+
+    <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+      Chef Bee and our culinary team are currently reviewing your preferences. We will prepare a personalized menu proposal and quote, and reach out to you within <strong>24 to 48 hours</strong>.
+    </p>
+
+    <div class="notice-box">
+      <strong>Have urgent updates?</strong> If your venue or date details change, reply directly to this email or reach us at <a href="mailto:admin@beestreatz.co.uk" style="color: #ea580c;">admin@beestreatz.co.uk</a>.
+    </div>
+  `;
+
+  return sendEmail({
+    to: params.clientEmail,
+    subject,
+    text,
+    html: wrapBrandTemplate(contentHtml),
+  });
+}
+
+/**
+ * Send Catering Inquiry notification alert to Chef Bee / Admin
+ */
+export async function sendCateringInquiryAdminAlertEmail(inquiry: {
+  id: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  eventType: string;
+  eventDate: string;
+  venueLocation: string;
+  venuePostcode?: string | null;
+  guestCount: number;
+  services: string[];
+  budgetRange?: string | null;
+  dietaryNotes?: string | null;
+  stylingNotes?: string | null;
+}): Promise<boolean> {
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@beestreatz.co.uk';
+  const subject = `🔔 NEW CATERING INQUIRY: ${inquiry.clientName} (${inquiry.eventType} - ${inquiry.guestCount} guests)`;
+  const text = `New catering inquiry from ${inquiry.clientName} (${inquiry.clientEmail}, ${inquiry.clientPhone}) for a ${inquiry.eventType} on ${inquiry.eventDate} at ${inquiry.venueLocation}. Check admin dashboard.`;
+
+  const contentHtml = `
+    <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 0;">New Catering & Event Inquiry! &#127855;</h2>
+    <p>A new prospective client just submitted a catering request via the website:</p>
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin: 20px 0;">
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold; width: 140px;">Client Name:</td><td>${inquiry.clientName}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Email:</td><td><a href="mailto:${inquiry.clientEmail}">${inquiry.clientEmail}</a></td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Phone:</td><td>${inquiry.clientPhone}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Event Type:</td><td>${inquiry.eventType}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Event Date:</td><td>${inquiry.eventDate}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Venue:</td><td>${inquiry.venueLocation} (${inquiry.venuePostcode || 'N/A'})</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Guest Count:</td><td>${inquiry.guestCount} guests</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Services:</td><td>${inquiry.services.join(', ')}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Budget Range:</td><td>${inquiry.budgetRange || 'Not specified'}</td></tr>
+      <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px 0; font-weight: bold;">Dietary Notes:</td><td>${inquiry.dietaryNotes || 'None'}</td></tr>
+      <tr><td style="padding: 8px 0; font-weight: bold;">Styling Notes:</td><td>${inquiry.stylingNotes || 'None'}</td></tr>
+    </table>
+
+    <div class="btn-container">
+      <a href="${config.frontendUrl}/admin" class="btn">View in Admin Dashboard</a>
+    </div>
+  `;
+
+  return sendEmail({
+    to: adminEmail,
+    subject,
+    text,
+    html: wrapBrandTemplate(contentHtml),
+  });
+}

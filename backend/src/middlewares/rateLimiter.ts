@@ -55,3 +55,17 @@ export const resendVerificationLimiter = rateLimit({
     error: 'Too many verification emails requested. Please check your inbox or wait 15 minutes.',
   },
 });
+
+/**
+ * Rate limiter for catering inquiry submissions to prevent spamming
+ * Max 10 submissions per hour per IP
+ */
+export const cateringInquiryLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many catering inquiries from this IP. Please try again later or contact us directly.',
+  },
+});

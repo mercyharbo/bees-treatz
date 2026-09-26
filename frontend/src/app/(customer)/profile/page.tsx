@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProfileStore } from '@/store/useProfileStore';
 import { useProfile } from '@/hooks/queries';
-import { UserProfile } from '@/types/auth';
 import { api } from '@/lib/api';
 import { ProfileSummaryCard } from '@/components/profile/profile-summary-card';
 import { ProfileTabs } from '@/components/profile/profile-tabs';
@@ -14,27 +14,29 @@ import { ProfileSkeleton } from '@/components/profile/profile-skeleton';
 function ProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab') || 'settings';
 
   const { logout } = useAuthStore();
   const { user, loading, mutate: refreshProfile } = useProfile();
-  const [activeTab, setActiveTab] = useState(initialTab);
 
-  // Avatar Modal State
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  // Email Verification Resend States
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [verificationResent, setVerificationResent] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const {
+    activeTab,
+    setActiveTab,
+    showAvatarModal,
+    setShowAvatarModal,
+    uploadingAvatar,
+    resendingVerification,
+    verificationResent,
+    verificationError,
+    updateAvatar,
+    resendVerificationEmail,
+  } = useProfileStore();
 
   useEffect(() => {
     const tabParam = searchParams.get('tab');
     if (tabParam) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);
+  }, [searchParams, setActiveTab]);
 
   const handleSignOut = async () => {
     try {
@@ -46,37 +48,15 @@ function ProfileContent() {
     router.push('/');
   };
 
-  // Update Avatar using centralized api client and SWR revalidation
+  // Update Avatar using store action and SWR revalidation
   const handleUpdateAvatar = async (avatarUrl: string | null) => {
-    setUploadingAvatar(true);
-
-    try {
-      const data = await api.patch<{ user?: UserProfile }>('/auth/profile', { avatarUrl });
-      if (data?.user) {
-        useAuthStore.getState().setUser(data.user);
-      }
-      await refreshProfile();
-    } finally {
-      setUploadingAvatar(false);
-    }
+    await updateAvatar(avatarUrl, refreshProfile);
   };
 
-  // Resend email verification link using centralized api client
+  // Resend email verification link using store action
   const handleResendVerificationEmail = async () => {
     if (!user?.email) return;
-    setResendingVerification(true);
-    setVerificationResent(false);
-    setVerificationError(null);
-
-    try {
-      await api.post('/auth/resend-verification', { email: user.email });
-      setVerificationResent(true);
-      setTimeout(() => setVerificationResent(false), 6000);
-    } catch (err: any) {
-      setVerificationError(err?.message || 'Failed to resend verification email.');
-    } finally {
-      setResendingVerification(false);
-    }
+    await resendVerificationEmail(user.email);
   };
 
   // Pure SWR loading check for skeleton

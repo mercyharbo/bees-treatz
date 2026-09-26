@@ -8,6 +8,7 @@ import orderRoutes from './routes/orderRoutes';
 import deliveryRoutes from './routes/deliveryRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import locationRoutes from './routes/locationRoutes';
+import cateringRoutes from './routes/cateringRoutes';
 
 const app: Application = express();
 
@@ -52,6 +53,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/catering', cateringRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

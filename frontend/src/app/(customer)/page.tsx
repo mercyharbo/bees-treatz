@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Flame, Sparkles, UtensilsCrossed } from 'lucide-react';
+import { ArrowRight, Flame, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
@@ -27,15 +27,15 @@ export default function HomePage() {
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-amber-500/15 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
-          {/* Badge */}
+          {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-amber-400 shadow-sm animate-in fade-in duration-500">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Flame className="w-3.5 h-3.5 text-orange-400" />
             <span>Authentic Nigerian Kitchen in the UK 🇬🇧</span>
           </div>
 
           {/* Heading */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
-            Taste The Rich Flavours Of <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">Home</span>.
+            Taste The Rich Flavours Of <span className="text-orange-500">Home</span>.
           </h1>
 
           {/* Description */}
@@ -48,7 +48,7 @@ export default function HomePage() {
             <Button
               asChild
               variant="default"
-              className="w-full sm:w-auto h-12 px-7 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-gray-950 font-bold text-sm sm:text-base shadow-lg shadow-orange-500/25 border-none"
+              className="w-full sm:w-auto h-12 px-7 font-bold text-sm sm:text-base border-none"
             >
               <Link href="/register">
                 <span>Get Started</span>
