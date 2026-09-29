@@ -5,12 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Flame, UtensilsCrossed } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MenuCatalog } from '@/components/menu/menu-catalog';
 
 export default function HomePage() {
   return (
     <div className="w-full">
-      {/* Hero Section matching Attachment 3 vibe */}
-      <section className="relative min-h-[90vh] flex items-center justify-center -mt-20 pt-32 sm:pt-40 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-b from-gray-900 via-gray-900 to-background text-white">
+      {/* Hero Section */}
+      <section className="relative min-h-[85vh] sm:min-h-[90vh] flex items-center justify-center -mt-20 pt-36 sm:pt-44 pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gray-950 text-white">
         {/* Background Image with Dark Vignette */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -18,9 +19,9 @@ export default function HomePage() {
             alt="Authentic Naija Cuisine"
             fill
             priority
-            className="object-cover opacity-25 filter contrast-125"
+            className="object-cover opacity-35 filter contrast-125"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-gray-950/60 to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/75 to-black/90" />
         </div>
 
         {/* Ambient Glow */}
@@ -39,16 +40,16 @@ export default function HomePage() {
           </h1>
 
           {/* Description */}
-          <p className="text-base sm:text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg text-gray-200 max-w-2xl mx-auto leading-relaxed">
             Slow-cooked Egusi, firewood-style Party Jollof, spicy Suya skewers, and chilled Chapman. Handcrafted fresh and delivered to your doorstep.
           </p>
 
-          {/* Action Buttons using shadcn Button with asChild */}
+          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
             <Button
               asChild
               variant="default"
-              className="w-full sm:w-auto h-12 px-7 font-bold text-sm sm:text-base border-none"
+              className="w-full sm:w-auto h-12 px-8 font-bold text-sm sm:text-base border-none rounded-full cursor-pointer shadow-none"
             >
               <Link href="/register">
                 <span>Get Started</span>
@@ -59,95 +60,19 @@ export default function HomePage() {
             <Button
               asChild
               variant="outline"
-              className="w-full sm:w-auto h-12 px-7 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-sm sm:text-base border-white/20 backdrop-blur-md transition-colors"
+              className="w-full sm:w-auto h-12 px-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-sm sm:text-base border-white/20 backdrop-blur-md transition-colors cursor-pointer"
             >
-              <Link href="/#menu">
+              <a href="#menu">
                 <UtensilsCrossed className="w-4 h-4 mr-2" />
                 <span>Explore Menu</span>
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Featured Menu Teaser Section */}
-      <section id="menu" className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20">
-        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 border-b border-gray-200/80 dark:border-white/10 pb-6">
-          <div>
-            <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
-              Fresh From Our Kitchen
-            </span>
-            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-1">Our Signature Specialties</h2>
-          </div>
-          <Button asChild variant="outline" className="rounded-full text-xs font-semibold px-4 h-8 border-gray-200 dark:border-white/10 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-white/10">
-            <Link href="/login">
-              <span>Sign In To Order</span>
-            </Link>
-          </Button>
-        </div>
-
-        {/* Dish Showcase Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-          {[
-            {
-              title: 'Smoky Party Jollof',
-              description: 'Cooked with plum tomatoes, red peppers, bay leaves, and slow-roasted beef stock.',
-              price: '£12.50',
-              image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=600&q=80',
-              tag: 'Best Seller',
-            },
-            {
-              title: 'Pounded Yam & Egusi Soup',
-              description: 'Ground melon seed stew simmered with bitterleaf, assorted meat, and smoked fish.',
-              price: '£16.00',
-              image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80',
-              tag: 'Chef Favorite',
-            },
-            {
-              title: 'Flame-Grilled Suya Skewers',
-              description: 'Tender sirloin strips marinated in authentic yaji spice, served with sliced red onions.',
-              price: '£11.00',
-              image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
-              tag: 'Spicy',
-            },
-          ].map((dish, idx) => (
-            <div
-              key={idx}
-              className="group overflow-hidden rounded-3xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-gray-900/60 dark:backdrop-blur-xl transition-all duration-300"
-            >
-              <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
-                <Image
-                  src={dish.image}
-                  alt={dish.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <span className="absolute top-3 right-3 bg-gray-950/80 backdrop-blur-md text-amber-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                  <Flame className="w-3 h-3 text-orange-500" />
-                  {dish.tag}
-                </span>
-              </div>
-              <div className="p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{dish.title}</h3>
-                  <span className="font-extrabold text-orange-600 dark:text-orange-400">{dish.price}</span>
-                </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {dish.description}
-                </p>
-                <div className="pt-2">
-                  <Button asChild variant="secondary" className="w-full rounded-xl text-xs font-semibold h-9 bg-gray-100 hover:bg-orange-500 hover:text-white dark:bg-white/10 dark:text-white dark:hover:bg-orange-500 transition-colors cursor-pointer">
-                    <Link href="/register">
-                      <span>Order This Dish</span>
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Full Interactive Menu Catalog directly on Index */}
+      <MenuCatalog />
     </div>
   );
 }

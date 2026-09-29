@@ -60,7 +60,7 @@ export function Navbar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Catering & Events', href: '/catering' },
-    { label: 'Menu', href: '/#menu' },
+    { label: 'Menu', href: '/menu' },
     { label: 'About', href: '/#about' },
     { label: 'Contact', href: '/#contact' },
   ];

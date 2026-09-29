@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MOCK_CATERING_PACKAGES } from '@/mock/catering';
 import { CateringCategory } from '@/types/catering';
+import { useCateringStore } from '@/store/useCateringStore';
 
-interface CateringMenuTabsProps {
-  onSelectService?: (serviceName: string) => void;
-}
-
-export function CateringMenuTabs({ onSelectService }: CateringMenuTabsProps) {
-  const [activeTab, setActiveTab] = useState<CateringCategory | 'all'>('all');
+export function CateringMenuTabs() {
+  const activeTab = useCateringStore((state) => state.activeCategoryTab);
+  const setActiveTab = useCateringStore((state) => state.setActiveCategoryTab);
+  const selectServiceAndScroll = useCateringStore(
+    (state) => state.selectServiceAndScroll
+  );
 
   const filteredPackages =
     activeTab === 'all'
@@ -26,16 +27,6 @@ export function CateringMenuTabs({ onSelectService }: CateringMenuTabsProps) {
     { key: 'bar', label: 'Mobile Bar & Drinks' },
     { key: 'bowls', label: 'Food & Soup Bowls' },
   ];
-
-  const handleSelect = (serviceKey: string) => {
-    if (onSelectService) {
-      onSelectService(serviceKey);
-    }
-    const form = document.getElementById('inquiry-form');
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   return (
     <section
@@ -79,7 +70,7 @@ export function CateringMenuTabs({ onSelectService }: CateringMenuTabsProps) {
         {filteredPackages.map((pkg) => (
           <div
             key={pkg.id}
-            onClick={() => handleSelect(pkg.serviceKey)}
+            onClick={() => selectServiceAndScroll(pkg.serviceKey)}
             className="group relative aspect-[3/4] sm:aspect-[4/5] rounded-2xl overflow-hidden cursor-pointer border border-gray-200/60 dark:border-white/10 shadow-sm transition-all duration-500 hover:shadow-xl"
           >
             {/* Background Image */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Calendar as CalendarIcon,
   Send,
@@ -16,57 +16,39 @@ import { Select } from '@/components/ui/select';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { api } from '@/lib/api';
+import { useCateringStore } from '@/store/useCateringStore';
 
-interface CateringInquiryFormProps {
-  selectedService?: string;
-  selectedEventType?: string;
-}
+export function CateringInquiryForm() {
+  const clientName = useCateringStore((state) => state.clientName);
+  const clientEmail = useCateringStore((state) => state.clientEmail);
+  const clientPhone = useCateringStore((state) => state.clientPhone);
+  const eventType = useCateringStore((state) => state.eventType);
+  const selectedDate = useCateringStore((state) => state.selectedDate);
+  const venueLocation = useCateringStore((state) => state.venueLocation);
+  const venuePostcode = useCateringStore((state) => state.venuePostcode);
+  const guestCount = useCateringStore((state) => state.guestCount);
+  const services = useCateringStore((state) => state.services);
+  const budgetRange = useCateringStore((state) => state.budgetRange);
+  const dietaryNotes = useCateringStore((state) => state.dietaryNotes);
+  const stylingNotes = useCateringStore((state) => state.stylingNotes);
+  const submitting = useCateringStore((state) => state.submitting);
+  const submitted = useCateringStore((state) => state.submitted);
+  const error = useCateringStore((state) => state.error);
 
-export function CateringInquiryForm({
-  selectedService,
-  selectedEventType,
-}: CateringInquiryFormProps) {
-  const [clientName, setClientName] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [eventType, setEventType] = useState(selectedEventType || 'Wedding');
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [eventDate, setEventDate] = useState('');
-  const [venueLocation, setVenueLocation] = useState('');
-  const [venuePostcode, setVenuePostcode] = useState('');
-  const [guestCount, setGuestCount] = useState<number | ''>(50);
-  const [services, setServices] = useState<string[]>(
-    selectedService ? [selectedService] : ['Grazing Table']
-  );
-  const [budgetRange, setBudgetRange] = useState('£1,500 - £3,000');
-  const [dietaryNotes, setDietaryNotes] = useState('');
-  const [stylingNotes, setStylingNotes] = useState('');
-
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Sync when prop updates from parent buttons
-  React.useEffect(() => {
-    if (selectedService && !services.includes(selectedService)) {
-      setServices((prev) => [...prev, selectedService]);
-    }
-  }, [selectedService]);
-
-  React.useEffect(() => {
-    if (selectedEventType) {
-      setEventType(selectedEventType);
-    }
-  }, [selectedEventType]);
-
-  const toggleService = (svc: string) => {
-    if (services.includes(svc)) {
-      setServices(services.filter((s) => s !== svc));
-    } else {
-      setServices([...services, svc]);
-    }
-  };
+  const setClientName = useCateringStore((state) => state.setClientName);
+  const setClientEmail = useCateringStore((state) => state.setClientEmail);
+  const setClientPhone = useCateringStore((state) => state.setClientPhone);
+  const setEventType = useCateringStore((state) => state.setEventType);
+  const setSelectedDate = useCateringStore((state) => state.setSelectedDate);
+  const setVenueLocation = useCateringStore((state) => state.setVenueLocation);
+  const setVenuePostcode = useCateringStore((state) => state.setVenuePostcode);
+  const setGuestCount = useCateringStore((state) => state.setGuestCount);
+  const setBudgetRange = useCateringStore((state) => state.setBudgetRange);
+  const setDietaryNotes = useCateringStore((state) => state.setDietaryNotes);
+  const setStylingNotes = useCateringStore((state) => state.setStylingNotes);
+  const toggleService = useCateringStore((state) => state.toggleService);
+  const submitInquiry = useCateringStore((state) => state.submitInquiry);
+  const resetForm = useCateringStore((state) => state.resetForm);
 
   const minSelectableDate = new Date();
   minSelectableDate.setHours(0, 0, 0, 0);
@@ -74,37 +56,7 @@ export function CateringInquiryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError(null);
-
-    if (!eventDate) {
-      setError('Please select your event date.');
-      setSubmitting(false);
-      return;
-    }
-
-    try {
-      await api.post('/catering/inquire', {
-        clientName,
-        clientEmail,
-        clientPhone,
-        eventType,
-        eventDate,
-        venueLocation,
-        venuePostcode,
-        guestCount: Number(guestCount) || 1,
-        services,
-        budgetRange,
-        dietaryNotes,
-        stylingNotes,
-      });
-
-      setSubmitted(true);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to submit catering inquiry. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+    await submitInquiry();
   };
 
   return (
@@ -141,16 +93,7 @@ export function CateringInquiryForm({
             <div className="pt-2">
               <Button
                 type="button"
-                onClick={() => {
-                  setSubmitted(false);
-                  setClientName('');
-                  setClientEmail('');
-                  setClientPhone('');
-                  setSelectedDate(undefined);
-                  setEventDate('');
-                  setVenueLocation('');
-                  setVenuePostcode('');
-                }}
+                onClick={resetForm}
                 className="text-xs px-6 h-10 cursor-pointer"
               >
                 Submit Another Request
@@ -270,14 +213,7 @@ export function CateringInquiryForm({
                       <Calendar
                         mode="single"
                         selected={selectedDate}
-                        onSelect={(date) => {
-                          setSelectedDate(date);
-                          if (date) {
-                            setEventDate(format(date, 'yyyy-MM-dd'));
-                          } else {
-                            setEventDate('');
-                          }
-                        }}
+                        onSelect={setSelectedDate}
                         disabled={(date) => date < minSelectableDate}
                       />
                     </PopoverContent>

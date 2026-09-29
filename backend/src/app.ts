@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { config } from './config';
 import authRoutes from './routes/authRoutes';
 import menuRoutes from './routes/menuRoutes';
+import menuDetailsRoutes from './routes/menuDetailsRoutes';
 import orderRoutes from './routes/orderRoutes';
 import deliveryRoutes from './routes/deliveryRoutes';
 import paymentRoutes from './routes/paymentRoutes';
@@ -49,6 +50,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api/menu-details', menuDetailsRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/payments', paymentRoutes);

@@ -3,13 +3,10 @@
 import React from 'react';
 import Image from 'next/image';
 import { ArrowRight, Heart, Building2, Users2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MOCK_CATERING_EVENT_TYPES } from '@/mock/catering';
-
-interface CateringEventTypesProps {
-  onSelectEventType?: (eventType: string) => void;
-}
+import { useCateringStore } from '@/store/useCateringStore';
 
 const EVENT_ICONS: Record<string, React.ElementType> = {
   Wedding: Heart,
@@ -17,16 +14,10 @@ const EVENT_ICONS: Record<string, React.ElementType> = {
   'Intimate Gathering': Users2,
 };
 
-export function CateringEventTypes({ onSelectEventType }: CateringEventTypesProps) {
-  const handleSelect = (eventVal: string) => {
-    if (onSelectEventType) {
-      onSelectEventType(eventVal);
-    }
-    const form = document.getElementById('inquiry-form');
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+export function CateringEventTypes() {
+  const selectEventTypeAndScroll = useCateringStore(
+    (state) => state.selectEventTypeAndScroll
+  );
 
   return (
     <section className="py-20 lg:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-b border-gray-200/80 dark:border-white/10">
@@ -84,7 +75,7 @@ export function CateringEventTypes({ onSelectEventType }: CateringEventTypesProp
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => handleSelect(evt.eventVal)}
+                    onClick={() => selectEventTypeAndScroll(evt.eventVal)}
                     className="text-xs font-semibold h-8 px-3 cursor-pointer"
                   >
                     <span>Inquire</span>

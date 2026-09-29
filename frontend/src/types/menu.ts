@@ -27,6 +27,7 @@ export interface MenuItem {
   isVegetarian: boolean;
   allergens: string[];
   optionGroups: OptionGroup[];
+  category?: Category | null;
 }
 
 export interface Category {

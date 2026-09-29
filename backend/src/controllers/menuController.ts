@@ -28,11 +28,26 @@ export async function getMenuHandler(req: Request, res: Response): Promise<void>
   }
 }
 
+function parseAllergens(allergens: unknown): string[] {
+  if (Array.isArray(allergens)) return allergens;
+  if (typeof allergens === 'string') {
+    try {
+      const parsed = JSON.parse(allergens);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return allergens ? [allergens] : [];
+    }
+  }
+  return [];
+}
+
 export async function getMenuItemHandler(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
-    const item = await prisma.menuItem.findUnique({
-      where: { id },
+    const item = await prisma.menuItem.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
       include: {
         category: true,
         optionGroups: {
@@ -48,10 +63,51 @@ export async function getMenuItemHandler(req: Request, res: Response): Promise<v
       return;
     }
 
-    res.json({ success: true, item });
+    res.json({
+      success: true,
+      item: {
+        ...item,
+        allergens: parseAllergens(item.allergens),
+      },
+    });
   } catch (error) {
     console.error('getMenuItemHandler error:', error);
     res.status(500).json({ error: 'Failed to fetch menu item.' });
+  }
+}
+
+export async function getMenuItemDetailsHandler(req: Request, res: Response): Promise<void> {
+  try {
+    const slugOrId = req.params.slug || req.params.id;
+    const item = await prisma.menuItem.findFirst({
+      where: {
+        OR: [{ slug: slugOrId }, { id: slugOrId }],
+      },
+      include: {
+        category: true,
+        optionGroups: {
+          include: {
+            options: true,
+          },
+        },
+      },
+    });
+
+    if (!item) {
+      res.status(404).json({ error: 'Menu item details not found.' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      item: {
+        ...item,
+        allergens: parseAllergens(item.allergens),
+      },
+    });
+  } catch (error) {
+    console.error('getMenuItemDetailsHandler error:', error);
+    res.status(500).json({ error: 'Failed to fetch menu item details.' });
   }
 }
 

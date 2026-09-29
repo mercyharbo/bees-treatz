@@ -33,7 +33,7 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm">
               <li>
-                <Link href="/#menu" className="hover:text-white transition-colors">
+                <Link href="/menu" className="hover:text-white transition-colors">
                   Menu
                 </Link>
               </li>
